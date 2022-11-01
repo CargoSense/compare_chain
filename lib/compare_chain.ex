@@ -43,7 +43,7 @@ defmodule CompareChain do
     compare?(a < b <= c, DateTime) |> IO.inspect()
 
     # false
-    compare?(%{b: b}[:b] >= d, DateTime) |> IO.inspect()
+    compare?(%{val: b}.val >= d, DateTime) |> IO.inspect()
 
     :ok
   end
