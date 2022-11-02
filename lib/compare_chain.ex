@@ -1,8 +1,28 @@
 defmodule CompareChain do
+  @valid_combinations [:and, :or]
   @valid_ops [:<, :>, :<=, :>=]
   defmacro compare?(expr, module) do
     ast = quote(do: unquote(expr))
 
+    ast
+    |> Macro.prewalker()
+    |> Enum.reduce_while([], fn
+      {c, meta, [_left, right]}, acc when c in @valid_combinations ->
+        {:cont, [{c, meta, chain(right, module)} | acc]}
+
+      node, acc ->
+        {:halt, [{nil, nil, chain(node, module)} | acc]}
+    end)
+    |> Enum.reduce(nil, fn
+      {nil, nil, node}, nil ->
+        node
+
+      {c, meta, node}, acc ->
+        {c, meta, [acc, node]}
+    end)
+  end
+
+  defp chain(ast, module) do
     ast
     |> Macro.prewalker()
     |> Enum.reduce_while([], fn
@@ -44,6 +64,12 @@ defmodule CompareChain do
 
     # false
     compare?(%{val: b}.val >= d, DateTime) |> IO.inspect()
+
+    # true
+    compare?(a > b or c < d, DateTime) |> IO.inspect()
+
+    # false
+    compare?(a > b and c < d, DateTime) |> IO.inspect()
 
     :ok
   end
