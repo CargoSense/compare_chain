@@ -39,7 +39,7 @@ defmodule CompareChain do
     c = ~U[2022-01-01 00:00:00Z]
     d = ~U[2023-01-01 00:00:00Z]
 
-    # # true
+    # true
     compare?(a < b <= c, DateTime) |> IO.inspect()
 
     # false
