@@ -52,25 +52,4 @@ defmodule CompareChain do
       end
     end)
   end
-
-  def run() do
-    a = ~U[2020-01-01 00:00:00Z]
-    b = ~U[2021-01-01 00:00:00Z]
-    c = ~U[2022-01-01 00:00:00Z]
-    d = ~U[2023-01-01 00:00:00Z]
-
-    # true
-    compare?(a < b <= c, DateTime) |> IO.inspect()
-
-    # false
-    compare?(%{val: b}.val >= d, DateTime) |> IO.inspect()
-
-    # true
-    compare?(a > b or c < d, DateTime) |> IO.inspect()
-
-    # false
-    compare?(a > b and c < d, DateTime) |> IO.inspect()
-
-    :ok
-  end
 end
