@@ -3,7 +3,13 @@ defmodule CompareChainTest do
 
   import CompareChain
 
-  test "basic examples" do
+  test "basic `compare?/1` examples" do
+    assert compare?(1 < 2)
+    assert compare?(1 < 2 < 3)
+    refute compare?(1 >= 2)
+  end
+
+  test "basic `compare?/2` examples" do
     a = ~U[2020-01-01 00:00:00Z]
     b = ~U[2021-01-01 00:00:00Z]
     c = ~U[2022-01-01 00:00:00Z]

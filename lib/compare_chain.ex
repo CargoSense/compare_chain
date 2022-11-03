@@ -1,4 +1,9 @@
 defmodule CompareChain do
+  defmacro compare?(expr) do
+    ast = quote(do: unquote(expr))
+    do_compare?(ast, CompareChain.DefaultCompare)
+  end
+
   defmacro compare?(expr, module) do
     ast = quote(do: unquote(expr))
     do_compare?(ast, module)
