@@ -6,17 +6,17 @@ defmodule CompareChain do
     |> Macro.prewalker()
     |> Enum.reduce_while([], fn
       {c, meta, [_left, right]}, acc when c in [:and, :or] ->
-        {:cont, [{c, meta, chain(right, module)} | acc]}
+        {:cont, [{c, meta, right} | acc]}
 
       node, acc ->
-        {:halt, [{nil, nil, chain(node, module)} | acc]}
+        {:halt, [{nil, nil, node} | acc]}
     end)
     |> Enum.reduce(nil, fn
       {nil, nil, node}, nil ->
-        node
+        chain(node, module)
 
       {c, meta, node}, acc ->
-        {c, meta, [acc, node]}
+        {c, meta, [acc, chain(node, module)]}
     end)
   end
 
