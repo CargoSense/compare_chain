@@ -1,13 +1,18 @@
 defmodule CompareChain.MixProject do
   use Mix.Project
 
+  @source_url "https://github.com/CargoSense/compare_chain"
+  @version "0.1.0"
+
   def project do
     [
       app: :compare_chain,
-      version: "0.1.0",
+      deps: deps(),
+      docs: docs(),
       elixir: "~> 1.14",
+      package: package(),
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      version: @version
     ]
   end
 
@@ -21,9 +26,32 @@ defmodule CompareChain.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
       {:ex_doc, "~> 0.27", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      source_url: @source_url,
+      source_ref: "v#{@version}",
+      deps: [],
+      language: "en",
+      formatters: ["html"],
+      main: "readme",
+      extras: [
+        "README.md",
+        "CHANGELOG.md"
+      ]
+    ]
+  end
+
+  defp package do
+    [
+      description: "Chained, semantic comparisons for Elixir",
+      # licenses: ["MIT"],
+      links: %{
+        "GitHub" => @source_url
+      }
     ]
   end
 end
