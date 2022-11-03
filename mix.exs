@@ -48,7 +48,7 @@ defmodule CompareChain.MixProject do
   defp package do
     [
       description: "Chained, semantic comparisons for Elixir",
-      # licenses: ["MIT"],
+      licenses: ["MIT"],
       links: %{
         "GitHub" => @source_url
       }
