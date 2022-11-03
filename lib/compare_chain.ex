@@ -61,17 +61,14 @@ defmodule CompareChain do
   # becomes
   #
   # ```
-  #      and
-  #     /   \
-  # true   and
-  #       /   \
-  #      ~     ~
-  #     / \   / \
-  #    a   b b   c
+  #     and
+  #    /   \
+  #   ~     ~
+  #  / \   / \
+  # a   b b   c
   # ```
   #
   # where `~` is roughly `compare(left, right) == :lt`.
-  # The dangling `true` is just to make the reduce simpler.
   defp chain(ast, module) do
     ast
     |> Macro.prewalker()
@@ -83,7 +80,7 @@ defmodule CompareChain do
         {:halt, [{nil, node} | acc]}
     end)
     |> Enum.chunk_every(2, 1, :discard)
-    |> Enum.reduce(true, fn [{_, left}, {op, right}], acc ->
+    |> Enum.reduce(:initial, fn [{_, left}, {op, right}], acc ->
       {kernel_fun, evals_to} =
         case op do
           :< -> {:==, :lt}
@@ -92,13 +89,20 @@ defmodule CompareChain do
           :>= -> {:!=, :lt}
         end
 
-      comparison =
+      inner_comparison =
         quote do
           unquote(module).compare(unquote(left), unquote(right))
         end
 
-      quote do
-        unquote(acc) and Kernel.unquote(kernel_fun)(unquote(comparison), unquote(evals_to))
+      outer_comparison =
+        quote do
+          Kernel.unquote(kernel_fun)(unquote(inner_comparison), unquote(evals_to))
+        end
+
+      if acc == :initial do
+        outer_comparison
+      else
+        quote(do: unquote(acc) and unquote(outer_comparison))
       end
     end)
   end
