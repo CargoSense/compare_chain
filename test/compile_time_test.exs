@@ -1,12 +1,7 @@
 defmodule CompileTimeTest do
   use ExUnit.Case
 
-  import CompareChain,
-    only: [
-      chain_error_message: 0,
-      raise_on_not_message: 0
-    ]
-
+  import CompareChain.ErrorMessage
   import CompileTimeAssertions
 
   test "including no comparison operators raises at compile time" do
