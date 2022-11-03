@@ -120,6 +120,9 @@ defmodule CompareChain do
     #      combination.
     # The head of the stack will be special: `{nil, nil, node}`.
     |> Enum.reduce_while([], fn
+      {:not, _, [_]}, _ ->
+        raise_on_not()
+
       {c, meta, [_left, right]}, acc when c in [:and, :or] ->
         {:cont, [{c, meta, right} | acc]}
 
@@ -129,11 +132,32 @@ defmodule CompareChain do
     # Unwind stack back into the ast while calling `chain` on the nodes.
     |> Enum.reduce(nil, fn
       {nil, nil, node}, nil ->
-        chain(node, module)
+        chain_or_raise(node, module)
 
       {c, meta, node}, acc ->
-        {c, meta, [acc, chain(node, module)]}
+        {c, meta, [acc, chain_or_raise(node, module)]}
     end)
+  end
+
+  defp raise_on_not() do
+    raise ArgumentError, """
+    Expression may not include unary `not` operator.
+    Consider using negation rules, e.g.
+    `not (a < b)` becomes `a >= b`.
+    """
+  end
+
+  defp chain_or_raise(node, module) do
+    node = chain(node, module)
+
+    if node == :no_comparison_operators_found do
+      raise ArgumentError, """
+      No comparison operators found.
+      Expression must include at least one of `<`, `>`, `<=`, or `>=`.
+      """
+    else
+      node
+    end
   end
 
   # Transforms a chain of comparisons into a series of `and`'d pairs.
@@ -172,7 +196,7 @@ defmodule CompareChain do
         {:halt, [{nil, node} | acc]}
     end)
     |> Enum.chunk_every(2, 1, :discard)
-    |> Enum.reduce(:initial, fn [{_, left}, {op, right}], acc ->
+    |> Enum.reduce(:no_comparison_operators_found, fn [{_, left}, {op, right}], acc ->
       {kernel_fun, evals_to} =
         case op do
           :< -> {:==, :lt}
@@ -191,7 +215,7 @@ defmodule CompareChain do
           Kernel.unquote(kernel_fun)(unquote(inner_comparison), unquote(evals_to))
         end
 
-      if acc == :initial do
+      if acc == :no_comparison_operators_found do
         outer_comparison
       else
         quote(do: unquote(acc) and unquote(outer_comparison))
