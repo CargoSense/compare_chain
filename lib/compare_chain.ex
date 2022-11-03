@@ -120,9 +120,6 @@ defmodule CompareChain do
     #      combination.
     # The head of the stack will be special: `{nil, nil, node}`.
     |> Enum.reduce_while([], fn
-      {:not, _, [_]}, _ ->
-        raise_on_not()
-
       {c, meta, [_left, right]}, acc when c in [:and, :or] ->
         {:cont, [{c, meta, right} | acc]}
 
@@ -137,14 +134,6 @@ defmodule CompareChain do
       {c, meta, node}, acc ->
         {c, meta, [acc, chain_or_raise(node, module)]}
     end)
-  end
-
-  defp raise_on_not() do
-    raise ArgumentError, """
-    Expression may not include unary `not` operator.
-    Consider using negation rules, e.g.
-    `not (a < b)` becomes `a >= b`.
-    """
   end
 
   defp chain_or_raise(node, module) do
@@ -189,6 +178,9 @@ defmodule CompareChain do
     # This works because the right is guaranteed to be a comparison leaf, not
     # another comparison.
     |> Enum.reduce_while([], fn
+      {:not, _, [_]}, _ ->
+        raise_on_not()
+
       {op, _, [_left, right]}, acc when op in [:<, :>, :<=, :>=] ->
         {:cont, [{op, right} | acc]}
 
@@ -221,5 +213,13 @@ defmodule CompareChain do
         quote(do: unquote(acc) and unquote(outer_comparison))
       end
     end)
+  end
+
+  defp raise_on_not() do
+    raise ArgumentError, """
+    Expression may not include unary `not` operator.
+    Consider using negation rules, e.g.
+    `not (a < b)` becomes `a >= b`.
+    """
   end
 end
