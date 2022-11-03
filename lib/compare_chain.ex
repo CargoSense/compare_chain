@@ -28,7 +28,12 @@ defmodule CompareChain do
   defp do_compare?(ast, module) do
     ast
     |> Macro.prewalker()
-    # Build a stack of `and`s and `or`s.
+    # Build a stack of `and`s and `or`s and their right arguments.
+    # This works because
+    #   1. the `and` and `or` combinations are always higher than `<` and
+    #      friends in the ast and
+    #   2. the right argument will always be a combination leaf, never another
+    #      combination.
     # The head of the stack will be special: `{nil, nil, node}`.
     |> Enum.reduce_while([], fn
       {c, meta, [_left, right]}, acc when c in [:and, :or] ->
@@ -72,6 +77,9 @@ defmodule CompareChain do
   defp chain(ast, module) do
     ast
     |> Macro.prewalker()
+    # Build up a stack of comparison operators and their right arguments.
+    # This works because the right is guaranteed to be a comparison leaf, not
+    # another comparison.
     |> Enum.reduce_while([], fn
       {op, _, [_left, right]}, acc when op in [:<, :>, :<=, :>=] ->
         {:cont, [{op, right} | acc]}
