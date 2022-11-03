@@ -70,10 +70,10 @@ defmodule CompareChain do
 
     ```
     iex> import CompareChain
-    iex> a = ~D[2017-03-31]
-    iex> b = ~D[2017-04-01]
-    iex> c = ~D[2017-04-02]
-    iex> compare?(a < b and b > c, Date)
+    iex> a = ~T[15:00:00]
+    iex> b = ~T[16:00:00]
+    iex> c = ~T[17:00:00]
+    iex> compare?(a < b and b > c, Time)
     false
     ```
 
