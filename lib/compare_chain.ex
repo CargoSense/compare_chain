@@ -1,13 +1,11 @@
 defmodule CompareChain do
-  @valid_combinations [:and, :or]
-  @valid_comparisons [:<, :>, :<=, :>=]
   defmacro compare?(expr, module) do
     ast = quote(do: unquote(expr))
 
     ast
     |> Macro.prewalker()
     |> Enum.reduce_while([], fn
-      {c, meta, [_left, right]}, acc when c in @valid_combinations ->
+      {c, meta, [_left, right]}, acc when c in [:and, :or] ->
         {:cont, [{c, meta, chain(right, module)} | acc]}
 
       node, acc ->
@@ -26,7 +24,7 @@ defmodule CompareChain do
     ast
     |> Macro.prewalker()
     |> Enum.reduce_while([], fn
-      {op, _, [_left, right]}, acc when op in @valid_comparisons ->
+      {op, _, [_left, right]}, acc when op in [:<, :>, :<=, :>=] ->
         {:cont, [{op, right} | acc]}
 
       node, acc ->
