@@ -1,13 +1,9 @@
 defmodule CompareChainTest do
   use ExUnit.Case
 
-  import CompareChain
+  doctest CompareChain
 
-  test "basic `compare?/1` examples" do
-    assert compare?(1 < 2)
-    assert compare?(1 < 2 < 3)
-    refute compare?(1 >= 2)
-  end
+  import CompareChain
 
   test "basic `compare?/2` examples" do
     a = ~U[2020-01-01 00:00:00Z]
@@ -19,13 +15,5 @@ defmodule CompareChainTest do
     refute compare?(%{val: b}.val >= d, DateTime)
     assert compare?(a > b or c < d, DateTime)
     refute compare?(a > b and c < d, DateTime)
-  end
-
-  defmodule AlwaysGreaterThan do
-    def compare(_left, _right), do: :gt
-  end
-
-  test "custom module" do
-    assert compare?(1 > 2 > 3, AlwaysGreaterThan)
   end
 end

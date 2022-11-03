@@ -1,4 +1,5 @@
 defmodule CompareChain.DefaultCompare do
+  @moduledoc false
   def compare(left, right) do
     cond do
       left < right -> :lt

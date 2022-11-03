@@ -1,9 +1,93 @@
 defmodule CompareChain do
+  @doc """
+  Macro that performs chained comparison using operators like `<`.
+
+  ## Examples
+
+  Basic comparison:
+
+    ```
+    iex> import CompareChain
+    iex> compare?(1 < 2)
+    true
+    ```
+
+  Chained comparison:
+
+    ```
+    iex> import CompareChain
+    iex> compare?(1 < 2 < 3)
+    true
+    ```
+
+  Comparisons joined by logical operators:
+
+    ```
+    iex> import CompareChain
+    iex> compare?(1 >= 2 and 4 > 3)
+    false
+    ```
+  """
   defmacro compare?(expr) do
     ast = quote(do: unquote(expr))
     do_compare?(ast, CompareChain.DefaultCompare)
   end
 
+  @doc """
+  Similar to `compare?/1` except you can provide a module that defines a
+  `compare/2` for semantic comparisons.
+
+  This is similar to how you can provide a module as the second argument to
+  `Enum.sort/2`.
+
+  ## Examples
+
+  Basic comparison:
+
+    ```
+    iex> import CompareChain
+    iex> a = ~D[2017-03-31]
+    iex> b = ~D[2017-04-01]
+    iex> compare?(a < b, Date)
+    true
+    ```
+
+  Normally, `~D[2017-03-31] < ~D[2017-04-01]` evaluates to `false` because of
+  structural comparison.
+
+  Chained comparison:
+
+    ```
+    iex> import CompareChain
+    iex> a = ~D[2017-03-31]
+    iex> b = ~D[2017-04-01]
+    iex> c = ~D[2017-04-02]
+    iex> compare?(a < b < c, Date)
+    true
+    ```
+
+  Comparisons joined by logical operators:
+
+    ```
+    iex> import CompareChain
+    iex> a = ~D[2017-03-31]
+    iex> b = ~D[2017-04-01]
+    iex> c = ~D[2017-04-02]
+    iex> compare?(a < b and b > c, Date)
+    false
+    ```
+
+  Custom module:
+
+    ```
+    iex> import CompareChain
+    iex> defmodule AlwaysGreaterThan do
+    iex>   def compare(_left, _right), do: :gt
+    iex> end
+    iex> compare?(1 > 2 > 3, AlwaysGreaterThan)
+    true
+    ```
+  """
   defmacro compare?(expr, module) do
     ast = quote(do: unquote(expr))
     do_compare?(ast, module)
