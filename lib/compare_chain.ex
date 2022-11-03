@@ -1,9 +1,30 @@
 defmodule CompareChain do
   defmacro compare?(expr, module) do
     ast = quote(do: unquote(expr))
+    do_compare?(ast, module)
+  end
 
+  # Calls `chain` on the arguments of `and` and `or`.
+  # E.g. for `a < b < c and d > e`,
+  #
+  # ```
+  #              and
+  #             /   \
+  #  (a < b < c)     (c > d)
+  # ```
+  #
+  # becomes
+  #
+  # ```
+  #                   and
+  #                  /   \
+  #  chain(a < b < c)     chain(c > d)
+  # ```
+  defp do_compare?(ast, module) do
     ast
     |> Macro.prewalker()
+    # Build a stack of `and`s and `or`s.
+    # The head of the stack will be special: `{nil, nil, node}`.
     |> Enum.reduce_while([], fn
       {c, meta, [_left, right]}, acc when c in [:and, :or] ->
         {:cont, [{c, meta, right} | acc]}
@@ -11,6 +32,7 @@ defmodule CompareChain do
       node, acc ->
         {:halt, [{nil, nil, node} | acc]}
     end)
+    # Unwind stack back into the ast while calling `chain` on the nodes.
     |> Enum.reduce(nil, fn
       {nil, nil, node}, nil ->
         chain(node, module)
@@ -20,6 +42,31 @@ defmodule CompareChain do
     end)
   end
 
+  # Transforms a chain of comparisons into a series of `and`'d pairs.
+  # E.g. for `a < b < c`,
+  #
+  # ```
+  #     <
+  #    / \
+  #   <   c
+  #  / \
+  # a   b
+  # ```
+  #
+  # becomes
+  #
+  # ```
+  #      and
+  #     /   \
+  # true   and
+  #       /   \
+  #      ~     ~
+  #     / \   / \
+  #    a   b b   c
+  # ```
+  #
+  # where `~` is roughly `compare(left, right) == :lt`.
+  # The dangling `true` is just to make the reduce simpler.
   defp chain(ast, module) do
     ast
     |> Macro.prewalker()
