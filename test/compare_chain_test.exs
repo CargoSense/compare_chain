@@ -20,4 +20,12 @@ defmodule CompareChainTest do
     assert compare?(a > b or c < d, DateTime)
     refute compare?(a > b and c < d, DateTime)
   end
+
+  defmodule AlwaysGreaterThan do
+    def compare(_left, _right), do: :gt
+  end
+
+  test "custom module" do
+    assert compare?(1 > 2 > 3, AlwaysGreaterThan)
+  end
 end
