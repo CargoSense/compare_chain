@@ -1,6 +1,11 @@
 defmodule CompareChain do
+  @moduledoc """
+  Convenience macros for doing comparisons
+  """
+
   @doc """
-  Macro that performs chained comparison using operators like `<`.
+  Macro that performs chained comparison using operators like `<` and
+  combinations using `and` and `or`.
 
   ## Examples
 
@@ -27,6 +32,15 @@ defmodule CompareChain do
     iex> compare?(1 >= 2 and 4 > 3)
     false
     ```
+
+  ## Notes
+
+  You may not use `not` in the `compare?/1` expression.
+  Doing so will result in a compile time error.
+  Consider using negation rules, e.g. `not (a < b)` becomes ` a >= b`.
+
+  You must include at least one comparison like `<` in your expression.
+  Failing to do so will result in a compile time error.
   """
   defmacro compare?(expr) do
     ast = quote(do: unquote(expr))
@@ -37,23 +51,24 @@ defmodule CompareChain do
   Similar to `compare?/1` except you can provide a module that defines a
   `compare/2` for semantic comparisons.
 
-  This is similar to how you can provide a module as the second argument to
+  This is like how you can provide a module as the second argument to
   `Enum.sort/2`.
+  See the notes in `compare?/1` as they apply to `compare?/2` as well.
 
   ## Examples
 
-  Basic comparison:
+  Basic comparison (note how `a < b == false` natively because of structural
+  comparison):
 
     ```
     iex> import CompareChain
     iex> a = ~D[2017-03-31]
     iex> b = ~D[2017-04-01]
+    iex> a < b
+    false
     iex> compare?(a < b, Date)
     true
     ```
-
-  Normally, `~D[2017-03-31] < ~D[2017-04-01]` evaluates to `false` because of
-  structural comparison.
 
   Chained comparison:
 
