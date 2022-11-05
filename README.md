@@ -13,7 +13,7 @@ Provides convenience macros for comparisons which do:
 ```elixir
 iex> import CompareChain
 
-# Chained operators
+# Chained comparisons
 iex> compare?(1 < 2 < 3)
 true
 
@@ -21,8 +21,8 @@ true
 iex> compare?(~D[2017-03-31] < ~D[2017-04-01], Date)
 true
 
-# Semantic comparisons + logical operators
-iex> compare?(~T[16:00:00] < ~T[16:00:00] and not ~T[17:00:00] >= ~T[17:00:00], Time)
+# Semantic comparisons with logical operators
+iex> compare?(~T[16:00:00] <= ~T[16:00:00] and not (~T[17:00:00] <= ~T[17:00:00]), Time)
 false
 
 # More complex expressions
