@@ -9,14 +9,4 @@ defmodule CompareChain.ErrorMessage do
     Expression must include at least one of `<`, `>`, `<=`, or `>=`.
     """
   end
-
-  # Public for testing
-  @doc false
-  def raise_on_not_message() do
-    """
-    Expression may not include unary `not` operator.
-    Consider using negation rules, e.g.
-    `not (a < b)` becomes `a >= b`.
-    """
-  end
 end

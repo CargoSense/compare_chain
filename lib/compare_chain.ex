@@ -3,19 +3,13 @@ defmodule CompareChain do
   Convenience macros for doing comparisons
   """
 
+  require Integer
+
   @doc """
   Macro that performs chained comparison using operators like `<` and
-  combinations using `and` and `or`.
+  combinations using `and` `or`, and `not`.
 
   ## Examples
-
-  Basic comparison:
-
-    ```
-    iex> import CompareChain
-    iex> compare?(1 < 2)
-    true
-    ```
 
   Chained comparison:
 
@@ -29,15 +23,11 @@ defmodule CompareChain do
 
     ```
     iex> import CompareChain
-    iex> compare?(1 >= 2 and 4 > 3)
+    iex> compare?(1 >= 2 >= 3 or 4 >= 5 >= 6)
     false
     ```
 
   ## Notes
-
-  You may not use `not` in the `compare?/1` expression.
-  Doing so will result in a compile time error.
-  Consider using negation rules, e.g. `not (a < b)` becomes ` a >= b`.
 
   You must include at least one comparison like `<` in your expression.
   Failing to do so will result in a compile time error.
@@ -92,6 +82,14 @@ defmodule CompareChain do
     false
     ```
 
+  More complex expressions:
+
+    ```
+    iex> import CompareChain
+    iex> compare?(%{a: ~T[16:00:00]}.a <= ~T[17:00:00], Time)
+    true
+    ```
+
   Custom module:
 
     ```
@@ -125,30 +123,37 @@ defmodule CompareChain do
   #  chain(a < b < c)     chain(c > d)
   # ```
   defp do_compare?(ast, module) do
-    ast
-    |> Macro.prewalker()
-    # Build a stack of `and`s and `or`s and their right arguments.
-    # This works because
-    #   1. the `and` and `or` combinations are always higher than `<` and
-    #      friends in the ast and
-    #   2. the right argument will always be a combination leaf, never another
-    #      combination.
-    # The head of the stack will be special: `{nil, nil, node}`.
-    |> Enum.reduce_while([], fn
-      {c, meta, [_left, right]}, acc when c in [:and, :or] ->
-        {:cont, [{c, meta, right} | acc]}
+    {ast, chain_or_raise_called?} =
+      Macro.postwalk(ast, false, fn
+        {op, meta, [left, right]}, called? when op in [:and, :or] ->
+          {left, called_left?} = maybe_call_chain_or_raise(left, module)
+          {right, called_right?} = maybe_call_chain_or_raise(right, module)
 
-      node, acc ->
-        {:halt, [{nil, nil, node} | acc]}
-    end)
-    # Unwind stack back into the ast while calling `chain` on the nodes.
-    |> Enum.reduce(nil, fn
-      {nil, nil, node}, nil ->
-        chain_or_raise(node, module)
+          called? = called? or called_left? or called_right?
 
-      {c, meta, node}, acc ->
-        {c, meta, [acc, chain_or_raise(node, module)]}
-    end)
+          {{op, meta, [left, right]}, called?}
+
+        node, called? ->
+          {node, called?}
+      end)
+
+    # If no `and`s or `or`s were present in `ast`, we haven't called
+    # `chain_or_raise` yet and so we need to do so.
+    if not chain_or_raise_called? do
+      chain_or_raise(ast, module)
+    else
+      ast
+    end
+  end
+
+  defp maybe_call_chain_or_raise(node, module) do
+    case node do
+      {op, _, _} when op in [:<, :>, :<=, :>=, :not] ->
+        {chain_or_raise(node, module), true}
+
+      _ ->
+        {node, false}
+    end
   end
 
   defp chain_or_raise(node, module) do
@@ -184,15 +189,61 @@ defmodule CompareChain do
   #
   # where `~` is roughly `compare(left, right) == :lt`.
   defp chain(ast, module) do
+    {not_count, ast} = unwrap_nots(ast)
+
+    expr_or_atom =
+      ast
+      |> chain_nested_ops()
+      |> Enum.map(fn op -> op_to_module_expr(op, module) end)
+      |> Enum.reduce(:no_comparison_operators_found, fn expr, acc ->
+        if acc == :no_comparison_operators_found do
+          expr
+        else
+          quote(do: unquote(acc) and unquote(expr))
+        end
+      end)
+
+    cond do
+      expr_or_atom == :no_comparison_operators_found ->
+        :no_comparison_operators_found
+
+      Integer.is_odd(not_count) ->
+        quote(do: not unquote(expr_or_atom))
+
+      true ->
+        expr_or_atom
+    end
+  end
+
+  # Unwraps any nested series of `not`s and counts the number of `not`s.
+  # E.g. `not (not ( not (1 < 2)))` returns `{3, 1 < 2}`
+  defp unwrap_nots(ast) do
+    [nil]
+    |> Stream.cycle()
+    |> Enum.reduce_while({0, ast}, fn
+      _, {count, {:not, _, [node]}} ->
+        {:cont, {count + 1, node}}
+
+      # Do I need to also account for `:__block__` elsewhere?
+      _, {count, {:__block__, _, [node]}} ->
+        {:cont, {count, node}}
+
+      _, {count, node} ->
+        {:halt, {count, node}}
+    end)
+  end
+
+  # Converts nested expressions like
+  #   <(<(<(a, b), c), d)
+  # to a list of paired expresions like
+  #   [<(a, b), <(b, c), <(c, d)]
+  defp chain_nested_ops(ast) do
     ast
-    |> Macro.prewalker()
     # Build up a stack of comparison operators and their right arguments.
     # This works because the right is guaranteed to be a comparison leaf, not
     # another comparison.
+    |> Macro.prewalker()
     |> Enum.reduce_while([], fn
-      {:not, _, [_]}, _ ->
-        raise_on_not()
-
       {op, _, [_left, right]}, acc when op in [:<, :>, :<=, :>=] ->
         {:cont, [{op, right} | acc]}
 
@@ -200,34 +251,29 @@ defmodule CompareChain do
         {:halt, [{nil, node} | acc]}
     end)
     |> Enum.chunk_every(2, 1, :discard)
-    |> Enum.reduce(:no_comparison_operators_found, fn [{_, left}, {op, right}], acc ->
-      {kernel_fun, evals_to} =
-        case op do
-          :< -> {:==, :lt}
-          :> -> {:==, :gt}
-          :<= -> {:!=, :gt}
-          :>= -> {:!=, :lt}
-        end
-
-      inner_comparison =
-        quote do
-          unquote(module).compare(unquote(left), unquote(right))
-        end
-
-      outer_comparison =
-        quote do
-          Kernel.unquote(kernel_fun)(unquote(inner_comparison), unquote(evals_to))
-        end
-
-      if acc == :no_comparison_operators_found do
-        outer_comparison
-      else
-        quote(do: unquote(acc) and unquote(outer_comparison))
-      end
-    end)
+    |> Enum.map(fn [{_, left}, {op, right}] -> {op, left, right} end)
   end
 
-  defp raise_on_not() do
-    raise ArgumentError, CompareChain.ErrorMessage.raise_on_not_message()
+  # Converts an ast like
+  #   `{<, left, right}`
+  # to an expression like
+  #   `module.compare(left, right) == :lt`
+  defp op_to_module_expr({op, left, right}, module) do
+    {kernel_fun, evals_to} =
+      case op do
+        :< -> {:==, :lt}
+        :> -> {:==, :gt}
+        :<= -> {:!=, :gt}
+        :>= -> {:!=, :lt}
+      end
+
+    inner_comparison =
+      quote do
+        unquote(module).compare(unquote(left), unquote(right))
+      end
+
+    quote do
+      Kernel.unquote(kernel_fun)(unquote(inner_comparison), unquote(evals_to))
+    end
   end
 end

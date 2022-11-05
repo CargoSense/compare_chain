@@ -18,13 +18,4 @@ defmodule CompileTimeTest do
       end
     end)
   end
-
-  test "including not in message raises at compile time" do
-    assert_raise(ArgumentError, raise_on_not_message(), fn ->
-      defmodule Not do
-        import CompareChain
-        def fun, do: compare?(not (1 > 2))
-      end
-    end)
-  end
 end

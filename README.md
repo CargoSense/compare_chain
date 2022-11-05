@@ -5,31 +5,29 @@
 Provides convenience macros for comparisons which do:
 
   * chained comparisons like `a < b < c`
-  * semantic comparisons using structural operators like `<`
-  * combinations using `and` and `or`
+  * semantic comparisons using the structural operators `<`, `>`, `<=`, and `>=`
+  * combinations using `and`, `or`, and `not`
 
 ### Examples
 
 ```elixir
 iex> import CompareChain
 
+# Chained operators
 iex> compare?(1 < 2 < 3)
 true
 
-iex> compare?(1 > 2 or 3 < 4)
-true
-
-iex> compare?(1 > 2 and 3 < 4)
-false
-
+# Semantic comparisons
 iex> compare?(~D[2017-03-31] < ~D[2017-04-01], Date)
 true
 
-iex> compare?(~D[2017-03-31] < ~D[2017-04-01] <= ~D[2017-04-02], Date)
-true
-
-iex> compare?(~T[16:00:00] < ~T[16:00:00] and ~T[17:00:00] >= ~T[17:00:00], Time)
+# Semantic comparisons + logical operators
+iex> compare?(~T[16:00:00] < ~T[16:00:00] and not ~T[17:00:00] >= ~T[17:00:00], Time)
 false
+
+# More complex expressions
+iex> compare?(%{a: ~T[16:00:00]}.a <= ~T[17:00:00], Time)
+true
 ```
 
 ## Installation
