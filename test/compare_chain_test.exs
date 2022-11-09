@@ -25,6 +25,13 @@ defmodule CompareChainTest do
     assert compare?((true and 1 < 2) or false)
   end
 
+  test "works with `==` and `!=`" do
+    assert compare?(~T[00:00:00] == ~T[00:00:00], Time)
+    refute compare?(~T[00:00:00] == ~T[11:11:11], Time)
+    refute compare?(~T[00:00:00] != ~T[00:00:00], Time)
+    assert compare?(~T[00:00:00] != ~T[11:11:11], Time)
+  end
+
   test "basic `compare?/2` examples" do
     a = ~U[2020-01-01 00:00:00Z]
     b = ~U[2021-01-01 00:00:00Z]
