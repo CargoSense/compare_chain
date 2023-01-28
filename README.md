@@ -5,7 +5,7 @@
 Provides convenience macros for comparisons which do:
 
   * chained comparisons like `a < b < c`
-  * semantic comparisons using the structural operators `<`, `>`, `<=`, and `>=`
+  * semantic comparisons using the structural operators `<`, `>`, `<=`, `>=`, `==`, and `!=`
   * combinations using `and`, `or`, and `not`
 
 ### Examples
