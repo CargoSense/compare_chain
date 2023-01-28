@@ -148,7 +148,7 @@ defmodule CompareChain do
 
   defp maybe_call_chain_or_raise(node, module) do
     case node do
-      {op, _, _} when op in [:<, :>, :<=, :>=, :not] ->
+      {op, _, _} when op in [:<, :>, :<=, :>=, :==, :!=, :not] ->
         {chain_or_raise(node, module), true}
 
       _ ->
@@ -244,7 +244,7 @@ defmodule CompareChain do
     # another comparison.
     |> Macro.prewalker()
     |> Enum.reduce_while([], fn
-      {op, _, [_left, right]}, acc when op in [:<, :>, :<=, :>=] ->
+      {op, _, [_left, right]}, acc when op in [:<, :>, :<=, :>=, :==, :!=] ->
         {:cont, [{op, right} | acc]}
 
       node, acc ->
@@ -265,6 +265,8 @@ defmodule CompareChain do
         :> -> {:==, :gt}
         :<= -> {:!=, :gt}
         :>= -> {:!=, :lt}
+        :== -> {:==, :eq}
+        :!= -> {:!=, :eq}
       end
 
     inner_comparison =
