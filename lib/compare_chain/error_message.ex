@@ -6,7 +6,7 @@ defmodule CompareChain.ErrorMessage do
   def chain_error_message() do
     """
     No comparison operators found.
-    Expression must include at least one of `<`, `>`, `<=`, or `>=`.
+    Expression must include at least one of `<`, `>`, `<=`, `>=`, `==`, or `!=`.
     """
   end
 end
