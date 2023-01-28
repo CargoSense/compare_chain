@@ -9,7 +9,7 @@ defmodule CompareChain.MixProject do
       app: :compare_chain,
       deps: deps(),
       docs: docs(),
-      elixir: ">= 1.12",
+      elixir: ">= 1.13.0",
       package: package(),
       start_permanent: Mix.env() == :prod,
       version: @version
