@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.3.0 (2023-01-28)
+
+Allow `==` and `!=` in expressions
+
 ## v0.2.0 (2022-11-05)
 
 Allow `not` in expressions
