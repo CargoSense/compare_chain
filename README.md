@@ -37,7 +37,7 @@ Add `compare_chain` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:compare_chain, "~> 0.1.0"}
+    {:compare_chain, "~> 0.3.0"}
   ]
 end
 ```
@@ -65,7 +65,7 @@ Since `a < b` is a boolean, that's probably not what you want.
 
 Further, operators like `<` do _structural_ comparison instead of _semantic_ comparison.
 For most situations, you probably want to use `compare/2`.
-From the [docs](https://hexdocs.pm/elixir/Kernel.html#module-structural-comparison):
+From the [`Kernel` docs](https://hexdocs.pm/elixir/Kernel.html#module-structural-comparison):
 
 <blockquote>
 <details>
@@ -74,20 +74,24 @@ From the [docs](https://hexdocs.pm/elixir/Kernel.html#module-structural-comparis
 
 The comparison functions in this module perform structural comparison.
 This means structures are compared based on their representation and not on their semantic value.
-This is specially important for functions that are meant to provide ordering, such as `>/2`, `</2`, `>=/2`, `<=/2`, `min/2`, and `max/2`.
+This is specially important for functions that are meant to provide ordering, such as <code>&gt;/2</code>, <code>&lt;/2</code>, <code>&gt;=/2</code>, <code>&lt;=/2</code>, <code>min/2</code>, and <code>max/2</code>.
 For example:
 
-```elixir
+<pre>
+<code>
 ~D[2017-03-31] > ~D[2017-04-01]
-```
+</code>
+</pre>
 
-will return true because structural comparison compares the `:day` field before `:month` or `:year`.
-Therefore, when comparing structs, you often use the `compare/2` function made available by the structs modules themselves:
+returns <code>true</code> because structural comparison compares the <code>:day</code> field before <code>:month</code> or <code>:year</code>.
+Therefore, when comparing structs, you often use the <code>compare/2</code> function made available by the structs modules themselves:
 
-```elixir
+<pre>
+<code>
 iex> Date.compare(~D[2017-03-31], ~D[2017-04-01])
 :lt
-```
+</code>
+</pre>
 
 </details>
 </blockquote>
