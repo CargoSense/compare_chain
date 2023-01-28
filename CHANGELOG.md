@@ -2,12 +2,12 @@
 
 ## v0.3.0 (2023-01-28)
 
-Allow `==` and `!=` in expressions
+  * Allow `==` and `!=` in expressions
 
 ## v0.2.0 (2022-11-05)
 
-Allow `not` in expressions
+  * Allow `not` in expressions
 
 ## v0.1.0 (2022-11-03)
 
-Initial release
+  * Initial release
