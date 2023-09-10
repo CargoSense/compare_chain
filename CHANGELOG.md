@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.4.0 (2023-09-10)
+
+  * Warn when `compare?/1` is used on a struct
+
 ## v0.3.0 (2023-01-28)
 
   * Allow `==` and `!=` in expressions
