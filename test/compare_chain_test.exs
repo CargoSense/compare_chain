@@ -21,6 +21,40 @@ defmodule CompareChainTest do
     end)
   end
 
+  test "compare?/1 with mismatched structs raises warning" do
+    warning_message =
+      ExUnit.CaptureLog.capture_log(fn ->
+        compare?(~D[2022-01-02] < ~T[00:00:00])
+      end)
+
+    assert warning_message =~ """
+           Performing structural comparison on one or more mismatched structs.
+
+           Left (%Date{} struct):
+
+             ~D[2022-01-02]
+
+           Right (%Time{} struct):
+
+             ~T[00:00:00]
+           """
+  end
+
+  test "compare?/1 with matching structs raises warning with a hint" do
+    warning_message =
+      ExUnit.CaptureLog.capture_log(fn ->
+        compare?(~D[2022-01-02] < ~D[2022-02-01])
+      end)
+
+    assert warning_message =~ """
+           [warning] Performing structural comparison on matching structs.
+
+           Did you mean to use `compare?/2`?
+
+             compare?(~D[2022-01-02] ??? ~D[2022-02-01], Date)
+           """
+  end
+
   test "works with boolean literals" do
     assert compare?((true and 1 < 2) or false)
   end
