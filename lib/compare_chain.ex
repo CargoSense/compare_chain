@@ -31,6 +31,9 @@ defmodule CompareChain do
 
   You must include at least one comparison like `<` in your expression.
   Failing to do so will result in a compile time error.
+
+  Including a struct in the expression will result in a warning.
+  You probably want to use `compare?/2` instead.
   """
   defmacro compare?(expr) do
     ast = quote(do: unquote(expr))
@@ -43,7 +46,6 @@ defmodule CompareChain do
 
   This is like how you can provide a module as the second argument to
   `Enum.sort/2`.
-  See the notes in `compare?/1` as they apply to `compare?/2` as well.
 
   ## Examples
 
@@ -99,6 +101,12 @@ defmodule CompareChain do
     iex> end
     iex> compare?(1 > 2 > 3, AlwaysGreaterThan)
     true
+    ```
+
+  ## Notes
+
+  You must include at least one comparison like `<` in your expression.
+  Failing to do so will result in a compile time error.
     ```
   """
   defmacro compare?(expr, module) do
