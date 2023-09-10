@@ -28,7 +28,7 @@ defmodule CompareChainTest do
       end)
 
     assert warning_message =~ """
-           Performing structural comparison on one or more mismatched structs.
+           [warning] Performing structural comparison on one or more mismatched structs.
 
            Left (%Date{} struct):
 
