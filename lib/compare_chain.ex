@@ -107,7 +107,6 @@ defmodule CompareChain do
 
   You must include at least one comparison like `<` in your expression.
   Failing to do so will result in a compile time error.
-    ```
   """
   defmacro compare?(expr, module) do
     ast = quote(do: unquote(expr))
