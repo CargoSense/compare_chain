@@ -13,19 +13,15 @@ defmodule CompareChain do
 
   Chained comparison:
 
-    ```
-    iex> import CompareChain
-    iex> compare?(1 < 2 < 3)
-    true
-    ```
+      iex> import CompareChain
+      iex> compare?(1 < 2 < 3)
+      true
 
   Comparisons joined by logical operators:
 
-    ```
-    iex> import CompareChain
-    iex> compare?(1 >= 2 >= 3 or 4 >= 5 >= 6)
-    false
-    ```
+      iex> import CompareChain
+      iex> compare?(1 >= 2 >= 3 or 4 >= 5 >= 6)
+      false
 
   ## Notes
 
@@ -52,56 +48,46 @@ defmodule CompareChain do
   Basic comparison (note how `a < b == false` natively because of structural
   comparison):
 
-    ```
-    iex> import CompareChain
-    iex> a = ~D[2017-03-31]
-    iex> b = ~D[2017-04-01]
-    iex> a < b
-    false
-    iex> compare?(a < b, Date)
-    true
-    ```
+      iex> import CompareChain
+      iex> a = ~D[2017-03-31]
+      iex> b = ~D[2017-04-01]
+      iex> a < b
+      false
+      iex> compare?(a < b, Date)
+      true
 
   Chained comparison:
 
-    ```
-    iex> import CompareChain
-    iex> a = ~D[2017-03-31]
-    iex> b = ~D[2017-04-01]
-    iex> c = ~D[2017-04-02]
-    iex> compare?(a < b < c, Date)
-    true
-    ```
+      iex> import CompareChain
+      iex> a = ~D[2017-03-31]
+      iex> b = ~D[2017-04-01]
+      iex> c = ~D[2017-04-02]
+      iex> compare?(a < b < c, Date)
+      true
 
   Comparisons joined by logical operators:
 
-    ```
-    iex> import CompareChain
-    iex> a = ~T[15:00:00]
-    iex> b = ~T[16:00:00]
-    iex> c = ~T[17:00:00]
-    iex> compare?(a < b and b > c, Time)
-    false
-    ```
+      iex> import CompareChain
+      iex> a = ~T[15:00:00]
+      iex> b = ~T[16:00:00]
+      iex> c = ~T[17:00:00]
+      iex> compare?(a < b and b > c, Time)
+      false
 
   More complex expressions:
 
-    ```
-    iex> import CompareChain
-    iex> compare?(%{a: ~T[16:00:00]}.a <= ~T[17:00:00], Time)
-    true
-    ```
+      iex> import CompareChain
+      iex> compare?(%{a: ~T[16:00:00]}.a <= ~T[17:00:00], Time)
+      true
 
   Custom module:
 
-    ```
-    iex> import CompareChain
-    iex> defmodule AlwaysGreaterThan do
-    iex>   def compare(_left, _right), do: :gt
-    iex> end
-    iex> compare?(1 > 2 > 3, AlwaysGreaterThan)
-    true
-    ```
+      iex> import CompareChain
+      iex> defmodule AlwaysGreaterThan do
+      iex>   def compare(_left, _right), do: :gt
+      iex> end
+      iex> compare?(1 > 2 > 3, AlwaysGreaterThan)
+      true
 
   ## Notes
 
@@ -116,19 +102,15 @@ defmodule CompareChain do
   # Calls `chain` on the arguments of `and` and `or`.
   # E.g. for `a < b < c and d > e`,
   #
-  # ```
-  #              and
-  #             /   \
-  #  (a < b < c)     (c > d)
-  # ```
+  #                      and
+  #                     /   \
+  #          (a < b < c)     (c > d)
   #
   # becomes
   #
-  # ```
-  #                   and
-  #                  /   \
-  #  chain(a < b < c)     chain(c > d)
-  # ```
+  #                      and
+  #                     /   \
+  #     chain(a < b < c)     chain(c > d)
   defp do_compare?(ast, module) do
     {ast, chain_or_raise_called?} =
       Macro.postwalk(ast, false, fn
@@ -176,23 +158,19 @@ defmodule CompareChain do
   # Transforms a chain of comparisons into a series of `and`'d pairs.
   # E.g. for `a < b < c`,
   #
-  # ```
-  #     <
-  #    / \
-  #   <   c
-  #  / \
-  # a   b
-  # ```
+  #         <
+  #        / \
+  #       <   c
+  #      / \
+  #     a   b
   #
   # becomes
   #
-  # ```
-  #     and
-  #    /   \
-  #   ~     ~
-  #  / \   / \
-  # a   b b   c
-  # ```
+  #         and
+  #        /   \
+  #       ~     ~
+  #      / \   / \
+  #     a   b b   c
   #
   # where `~` is roughly `compare(left, right) == :lt`.
   defp chain(ast, module) do
@@ -223,7 +201,7 @@ defmodule CompareChain do
   end
 
   # Unwraps any nested series of `not`s and counts the number of `not`s.
-  # E.g. `not (not ( not (1 < 2)))` returns `{3, 1 < 2}`
+  # E.g. `not (not (not (1 < 2)))` returns `{3, 1 < 2}`
   defp unwrap_nots(ast) do
     [nil]
     |> Stream.cycle()
@@ -240,10 +218,13 @@ defmodule CompareChain do
     end)
   end
 
-  # Converts nested expressions like
-  #   <(<(<(a, b), c), d)
-  # to a list of paired expresions like
-  #   [<(a, b), <(b, c), <(c, d)]
+  # Converts nested expressions like:
+  #
+  #     <(<(<(a, b), c), d)
+  #
+  # to a list of paired expresions like:
+  #
+  #     [<(a, b), <(b, c), <(c, d)]
   defp chain_nested_ops(ast) do
     ast
     # Build up a stack of comparison operators and their right arguments.
@@ -261,10 +242,13 @@ defmodule CompareChain do
     |> Enum.map(fn [{_, left}, {op, right}] -> {op, left, right} end)
   end
 
-  # Converts an ast like
-  #   `{<, left, right}`
-  # to an expression like
-  #   `module.compare(left, right) == :lt`
+  # Converts an ast like:
+  #
+  #     {<, left, right}
+  #
+  # to an expression like:
+  #
+  #     module.compare(left, right) == :lt
   defp op_to_module_expr({op, left, right}, module) do
     {kernel_fun, evals_to} =
       case op do
