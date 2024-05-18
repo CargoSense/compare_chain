@@ -6,8 +6,12 @@ defmodule CompareChain do
   require Integer
 
   @doc """
-  Macro that performs chained comparison using operators like `<` and
-  combinations using `and` `or`, and `not`.
+  Macro that performs chained comparison with operators like `<`.
+
+  You man also include combinations using `and`, `or`, and `not` in the
+  expression.
+
+  For a version that also does semantic comparison, see: `compare?/2`.
 
   ## Examples
 
@@ -23,13 +27,32 @@ defmodule CompareChain do
       iex> compare?(1 >= 2 >= 3 or 4 >= 5 >= 6)
       false
 
-  ## Notes
+  ## Warnings and errors
 
-  You must include at least one comparison like `<` in your expression.
-  Failing to do so will result in a compile time error.
+  > ### Comparing structs {: .warning}
+  >
+  > Expressions which compare matching structs like:
+  >
+  >     iex> compare?(~D[2017-03-31] < ~D[2017-04-01])
+  >     false
+  >
+  > Will result in a warning:
+  >
+  > ```plain
+  > ... [warning] Performing structural comparison on matching structs.
+  >
+  > Did you mean to use `compare?/2`?
+  >
+  >   compare?(~D[2017-03-31] ??? ~D[2017-04-01], Date)
+  > ```
+  >
+  > You probably want to use `compare?/2`, which does semantic comparison,
+  > instead.
 
-  Including a struct in the expression will result in a warning.
-  You probably want to use `compare?/2` instead.
+  > ### Compilation requirement {: .error}
+  >
+  > You must include at least one comparison like `<` in your expression.
+  > Failing to do so will result in a compile time error.
   """
   defmacro compare?(expr) do
     ast = quote(do: unquote(expr))
@@ -37,15 +60,22 @@ defmodule CompareChain do
   end
 
   @doc """
-  Similar to `compare?/1` except you can provide a module that defines a
-  `compare/2` for semantic comparisons.
+  Macro that performs chained, semantic comparison with operators like `<` by
+  rewriting the expression using the `compare/2` function defined by the
+  provided module.
 
   This is like how you can provide a module as the second argument to
-  `Enum.sort/2`.
+  `Enum.sort/2` when you need to sort items semantically.
+
+  You man also include combinations using `and`, `or`, and `not` in the
+  expression.
+
+  For a version that does chained comparison using the normal `<` operators,
+  see: `compare?/1`.
 
   ## Examples
 
-  Basic comparison (note how `a < b == false` natively because of structural
+  Semantic comparison (note how `a < b == false` because of native structural
   comparison):
 
       iex> import CompareChain
@@ -56,7 +86,7 @@ defmodule CompareChain do
       iex> compare?(a < b, Date)
       true
 
-  Chained comparison:
+  Chained, semantic comparison:
 
       iex> import CompareChain
       iex> a = ~D[2017-03-31]
@@ -89,10 +119,12 @@ defmodule CompareChain do
       iex> compare?(1 > 2 > 3, AlwaysGreaterThan)
       true
 
-  ## Notes
+  ## Warnings and errors
 
-  You must include at least one comparison like `<` in your expression.
-  Failing to do so will result in a compile time error.
+  > ### Compilation requirement {: .error}
+  >
+  > You must include at least one comparison like `<` in your expression.
+  > Failing to do so will result in a compile time error.
   """
   defmacro compare?(expr, module) do
     ast = quote(do: unquote(expr))
