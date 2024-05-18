@@ -87,4 +87,28 @@ defmodule CompareChainTest do
              Date
            )
   end
+
+  test "odd usage 1" do
+    assert compare?(
+             quote do
+               ~D[2020-01-01] < ~D[2020-01-02]
+             end,
+             Date
+           )
+  end
+
+  test "odd usage 2" do
+    assert compare?(compare?(~D[2020-01-01] < ~D[2020-01-02], Date) == true)
+  end
+
+  test "odd usage 3" do
+    assert compare?(
+             if ~D[2020-01-01] < ~D[2020-01-02] do
+               ~D[2020-01-01] < ~D[2020-01-02]
+             else
+               ~D[2020-01-01] < ~D[2020-01-02]
+             end,
+             Date
+           )
+  end
 end

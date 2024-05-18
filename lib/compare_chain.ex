@@ -231,6 +231,10 @@ defmodule CompareChain do
     # This works because the right is guaranteed to be a comparison leaf, not
     # another comparison.
     |> Macro.prewalker()
+    |> Enum.drop_while(fn
+      {op, _, _} when op in [:<, :>, :<=, :>=, :==, :!=] -> false
+      _ -> true
+    end)
     |> Enum.reduce_while([], fn
       {op, _, [_left, right]}, acc when op in [:<, :>, :<=, :>=, :==, :!=] ->
         {:cont, [{op, right} | acc]}
