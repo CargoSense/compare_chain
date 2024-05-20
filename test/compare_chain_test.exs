@@ -10,6 +10,11 @@ defmodule CompareChainTest do
       assert compare?((true and 1 < 2) or false)
     end
 
+    test "works with `===` and `!==`" do
+      refute compare?(1 === 1.0)
+      assert compare?(1 !== 1.0)
+    end
+
     test "works with `==` and `!=`" do
       assert compare?(~T[00:00:00] == ~T[00:00:00], Time)
       refute compare?(~T[00:00:00] == ~T[11:11:11], Time)
