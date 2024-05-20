@@ -3,7 +3,8 @@ defmodule CompareChain do
   Convenience macros for doing comparisons
   """
 
-  require Integer
+  alias CompareChain.DefaultCompare
+  alias CompareChain.ErrorMessage
 
   @doc """
   Macro that performs chained comparison with operators like `<`.
@@ -56,7 +57,7 @@ defmodule CompareChain do
   """
   defmacro compare?(expr) do
     ast = quote(do: unquote(expr))
-    do_compare?(ast, CompareChain.DefaultCompare)
+    do_compare?(ast, DefaultCompare)
   end
 
   @doc """
@@ -131,161 +132,86 @@ defmodule CompareChain do
     do_compare?(ast, module)
   end
 
-  # Calls `chain` on the arguments of `and` and `or`.
-  # E.g. for `a < b < c and d > e`,
-  #
-  #                      and
-  #                     /   \
-  #          (a < b < c)     (c > d)
-  #
-  # becomes
-  #
-  #                      and
-  #                     /   \
-  #     chain(a < b < c)     chain(c > d)
+  defguardp is_symmetric_op(op) when op == :== or op == :!=
+  defguardp is_asymmetric_op(op) when op == :<= or op == :>= or op == :< or op == :>
+  defguardp is_comparison_op(op) when is_symmetric_op(op) or is_asymmetric_op(op)
+  defguardp is_comparison(node) when is_tuple(node) and is_comparison_op(elem(node, 0))
+
   defp do_compare?(ast, module) do
-    {ast, chain_or_raise_called?} =
-      Macro.postwalk(ast, false, fn
-        {op, meta, [left, right]}, called? when op in [:and, :or] ->
-          {left, called_left?} = maybe_call_chain_or_raise(left, module)
-          {right, called_right?} = maybe_call_chain_or_raise(right, module)
-
-          called? = called? or called_left? or called_right?
-
-          {{op, meta, [left, right]}, called?}
-
-        node, called? ->
-          {node, called?}
-      end)
-
-    # If no `and`s or `or`s were present in `ast`, we haven't called
-    # `chain_or_raise` yet and so we need to do so.
-    if not chain_or_raise_called? do
-      chain_or_raise(ast, module)
-    else
-      ast
-    end
-  end
-
-  defp maybe_call_chain_or_raise(node, module) do
-    case node do
-      {op, _, _} when op in [:<, :>, :<=, :>=, :==, :!=, :not] ->
-        {chain_or_raise(node, module), true}
-
-      _ ->
-        {node, false}
-    end
-  end
-
-  defp chain_or_raise(node, module) do
-    node = chain(node, module)
-
-    if node == :no_comparison_operators_found do
-      raise ArgumentError, CompareChain.ErrorMessage.chain_error_message()
-    else
-      node
-    end
-  end
-
-  # Transforms a chain of comparisons into a series of `and`'d pairs.
-  # E.g. for `a < b < c`,
-  #
-  #         <
-  #        / \
-  #       <   c
-  #      / \
-  #     a   b
-  #
-  # becomes
-  #
-  #         and
-  #        /   \
-  #       ~     ~
-  #      / \   / \
-  #     a   b b   c
-  #
-  # where `~` is roughly `compare(left, right) == :lt`.
-  defp chain(ast, module) do
-    {not_count, ast} = unwrap_nots(ast)
-
-    expr_or_atom =
-      ast
-      |> chain_nested_ops()
-      |> Enum.map(fn op -> op_to_module_expr(op, module) end)
-      |> Enum.reduce(:no_comparison_operators_found, fn expr, acc ->
-        if acc == :no_comparison_operators_found do
-          expr
-        else
-          quote(do: unquote(acc) and unquote(expr))
-        end
-      end)
-
-    cond do
-      expr_or_atom == :no_comparison_operators_found ->
-        :no_comparison_operators_found
-
-      Integer.is_odd(not_count) ->
-        quote(do: not unquote(expr_or_atom))
-
-      true ->
-        expr_or_atom
-    end
-  end
-
-  # Unwraps any nested series of `not`s and counts the number of `not`s.
-  # E.g. `not (not (not (1 < 2)))` returns `{3, 1 < 2}`
-  defp unwrap_nots(ast) do
-    [nil]
-    |> Stream.cycle()
-    |> Enum.reduce_while({0, ast}, fn
-      _, {count, {:not, _, [node]}} ->
-        {:cont, {count + 1, node}}
-
-      # Do I need to also account for `:__block__` elsewhere?
-      _, {count, {:__block__, _, [node]}} ->
-        {:cont, {count, node}}
-
-      _, {count, node} ->
-        {:halt, {count, node}}
-    end)
-  end
-
-  # Converts nested expressions like:
-  #
-  #     <(<(<(a, b), c), d)
-  #
-  # to a list of paired expresions like:
-  #
-  #     [<(a, b), <(b, c), <(c, d)]
-  defp chain_nested_ops(ast) do
     ast
-    # Build up a stack of comparison operators and their right arguments.
-    # This works because the right is guaranteed to be a comparison leaf, not
-    # another comparison.
-    |> Macro.prewalker()
-    |> Enum.drop_while(fn
-      {op, _, _} when op in [:<, :>, :<=, :>=, :==, :!=] -> false
-      _ -> true
-    end)
-    |> Enum.reduce_while([], fn
-      {op, _, [_left, right]}, acc when op in [:<, :>, :<=, :>=, :==, :!=] ->
-        {:cont, [{op, right} | acc]}
-
-      node, acc ->
-        {:halt, [{nil, node} | acc]}
-    end)
-    |> Enum.chunk_every(2, 1, :discard)
-    |> Enum.map(fn [{_, left}, {op, right}] -> {op, left, right} end)
+    |> preprocess()
+    |> chain_nested_comparisons()
+    |> convert_structural_to_semantic(module)
   end
 
-  # Converts an ast like:
-  #
-  #     {<, left, right}
-  #
-  # to an expression like:
-  #
-  #     module.compare(left, right) == :lt
-  defp op_to_module_expr({op, left, right}, module) do
+  defp preprocess(ast) do
+    {preprocessed_ast, comparison_found?} =
+      ast
+      # Nested `compare?`s like `compare?(compare?(a < b, Date) == true)`
+      # aren't supported.
+      |> Macro.prewalk(fn
+        {:compare?, _, _} -> raise ArgumentError, ErrorMessage.nested_not_allowed()
+        node -> node
+      end)
+      # Unwrap blocks so they don't mess with how we detect nested comparisons.
+      |> Macro.prewalk(fn
+        {:__block__, _, [node]} -> node
+        node -> node
+      end)
+      # Check if we have any comparison operators.
+      |> Macro.prewalk(false, fn
+        node, _ when is_comparison(node) -> {node, true}
+        node, comparison_found? -> {node, comparison_found?}
+      end)
+
+    if not comparison_found? do
+      raise ArgumentError, ErrorMessage.comparison_required()
+    end
+
+    preprocessed_ast
+  end
+
+  defp chain_nested_comparisons(ast) do
+    ast
+    |> Macro.prewalk(fn
+      {_, _, [inner, _]} = outer when is_comparison(outer) and is_comparison(inner) ->
+        chain_nested_comparison(outer)
+
+      node ->
+        node
+    end)
+  end
+
+  # Convert structural comparisons to semantic comparisons.
+  defp convert_structural_to_semantic(ast, module) do
+    Macro.prewalk(ast, fn
+      node when is_comparison(node) -> op_to_module_expr(node, module)
+      node -> node
+    end)
+  end
+
+  # Converts an ast like `==(c, <=(a, b))` to an ast like `<=(==(c, a), b)`.
+  # We do this to cover an edge case where symmetric comparison operators have
+  # a higher precedence than the asymmetric operators. They therefore appear
+  # "out of order" in the AST. This reordering should result in an equivalent
+  # expression due to symmetry.
+  defp chain_nested_comparison({outer, meta_outer, [c, {inner, meta_inner, [a, b]}]})
+       when is_symmetric_op(outer) and is_asymmetric_op(inner) do
+    # Reminder! The ((c, a), b) order looks wrong but is correct.
+    reordered_ast = {inner, meta_inner, [{outer, meta_outer, [c, a]}, b]}
+    chain_nested_comparison(reordered_ast)
+  end
+
+  # Converts an ast for `a < b < c` to an ast for `a < b and b < c`.
+  defp chain_nested_comparison({outer, meta, [{inner, _, [a, b]}, c]}) do
+    left = {inner, meta, [a, b]}
+    right = {outer, meta, [b, c]}
+    {:and, meta, [left, right]}
+  end
+
+  # Converts an ast for `left < right` to an ast for
+  # `module.compare(left, right) == :lt`.
+  defp op_to_module_expr({op, meta, [left, right]}, module) do
     {kernel_fun, evals_to} =
       case op do
         :< -> {:==, :lt}
@@ -296,13 +222,8 @@ defmodule CompareChain do
         :!= -> {:!=, :eq}
       end
 
-    inner_comparison =
-      quote do
-        unquote(module).compare(unquote(left), unquote(right))
-      end
-
-    quote do
-      Kernel.unquote(kernel_fun)(unquote(inner_comparison), unquote(evals_to))
-    end
+    module_fun = {:., meta, [module, :compare]}
+    comparison = {module_fun, meta, [left, right]}
+    {kernel_fun, meta, [comparison, evals_to]}
   end
 end

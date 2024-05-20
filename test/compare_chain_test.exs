@@ -71,8 +71,17 @@ defmodule CompareChainTest do
     b = ~U[2021-01-01 00:00:00Z]
     c = ~U[2022-01-01 00:00:00Z]
     d = ~U[2023-01-01 00:00:00Z]
+    e = ~U[2024-01-01 00:00:00Z]
+    f = ~U[2025-01-01 00:00:00Z]
+    g = ~U[2026-01-01 00:00:00Z]
+    h = ~U[2027-01-01 00:00:00Z]
 
     assert compare?(a < b <= c, DateTime)
+    assert compare?(a < b < c < d, DateTime)
+    # This one is tricky since it mixes the symmetric and asymmetric operators.
+    # The AST is surprisingly out of order when that happens, so we had to
+    # account for it.
+    refute compare?(a < b == c < d == e < f != g < h, DateTime)
     refute compare?(%{val: b}.val >= d, DateTime)
     assert compare?(a > b or c < d, DateTime)
     refute compare?(a > b and c < d, DateTime)
@@ -88,27 +97,21 @@ defmodule CompareChainTest do
            )
   end
 
-  test "odd usage 1" do
-    assert compare?(
-             quote do
-               ~D[2020-01-01] < ~D[2020-01-02]
-             end,
-             Date
-           )
-  end
+  test "odd usage" do
+    # `~D[2020-02-01] < ~D[2020-01-02]` is `true` via structural comparison.
+    # Only if we do proper, semantic comparison do we get the right answer.
+    result =
+      compare?(
+        if ~D[2020-02-01] < ~D[2020-01-02] do
+          :structural
+        else
+          :semantic
+        end,
+        Date
+      )
 
-  test "odd usage 2" do
-    assert compare?(compare?(~D[2020-01-01] < ~D[2020-01-02], Date) == true)
-  end
-
-  test "odd usage 3" do
-    assert compare?(
-             if ~D[2020-01-01] < ~D[2020-01-02] do
-               ~D[2020-01-01] < ~D[2020-01-02]
-             else
-               ~D[2020-01-01] < ~D[2020-01-02]
-             end,
-             Date
-           )
+    # This whole thing odd since makes `compare?/2` not evaluate to a boolean.
+    # Preventing it enters the halting problem territory, though.
+    assert result == :semantic
   end
 end

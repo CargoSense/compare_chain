@@ -8,13 +8,22 @@ defmodule CompileTimeTest do
   # https://github.com/phoenixframework/phoenix/blob/master/test/phoenix/verified_routes_test.exs
   use ExUnit.Case
 
-  import CompareChain.ErrorMessage
+  alias CompareChain.ErrorMessage
 
   test "including no comparison operators raises at compile time" do
-    assert_raise(ArgumentError, chain_error_message(), fn ->
+    assert_raise(ArgumentError, ErrorMessage.comparison_required(), fn ->
       defmodule NoOperators do
         import CompareChain
         def fun, do: compare?(5)
+      end
+    end)
+  end
+
+  test "nested calls to `compare?` raises at compile time" do
+    assert_raise(ArgumentError, ErrorMessage.nested_not_allowed(), fn ->
+      defmodule NestedCalls do
+        import CompareChain
+        def fun, do: compare?(compare?(~D[2020-01-01] < ~D[2020-01-02], Date) == true)
       end
     end)
   end
