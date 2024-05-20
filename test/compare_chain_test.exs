@@ -126,7 +126,7 @@ defmodule CompareChainTest do
           compare?(~D[2022-01-02] === ~D[2022-01-02], Date)
         end)
 
-      assert warning_message !=
+      assert warning_message =~
                """
                Performing semantic comparison using either: `===` or `!===`.
                This is reinterpreted as `==` or `!=`, respectively.
