@@ -5,7 +5,7 @@ defmodule CompareChainTest do
 
   import CompareChain
 
-  describe "basic scenarios" do
+  describe "`compare?/1`" do
     test "works with boolean literals" do
       assert compare?((true and 1 < 2) or false)
     end
@@ -14,7 +14,9 @@ defmodule CompareChainTest do
       refute compare?(1 === 1.0)
       assert compare?(1 !== 1.0)
     end
+  end
 
+  describe "`compare?/2`" do
     test "works with `==` and `!=`" do
       assert compare?(~T[00:00:00] == ~T[00:00:00], Time)
       refute compare?(~T[00:00:00] == ~T[11:11:11], Time)
@@ -22,7 +24,22 @@ defmodule CompareChainTest do
       assert compare?(~T[00:00:00] != ~T[11:11:11], Time)
     end
 
-    test "basic `compare?/2` examples" do
+    test "basic examples" do
+      a = ~U[2020-01-01 00:00:00Z]
+      b = ~U[2021-01-01 00:00:00Z]
+      c = ~U[2022-01-01 00:00:00Z]
+      d = ~U[2023-01-01 00:00:00Z]
+
+      assert compare?(a < b <= c, DateTime)
+      assert compare?(a < b < c < d, DateTime)
+      refute compare?(%{val: b}.val >= d, DateTime)
+      assert compare?(a > b or c < d, DateTime)
+      refute compare?(a > b and c < d, DateTime)
+    end
+
+    # The AST is surprisingly out of order when this happens, so we had to
+    # account for it.
+    test "mixed symmetric and asymmetric operators" do
       a = ~U[2020-01-01 00:00:00Z]
       b = ~U[2021-01-01 00:00:00Z]
       c = ~U[2022-01-01 00:00:00Z]
@@ -32,15 +49,7 @@ defmodule CompareChainTest do
       g = ~U[2026-01-01 00:00:00Z]
       h = ~U[2027-01-01 00:00:00Z]
 
-      assert compare?(a < b <= c, DateTime)
-      assert compare?(a < b < c < d, DateTime)
-      # This one is tricky since it mixes the symmetric and asymmetric operators.
-      # The AST is surprisingly out of order when that happens, so we had to
-      # account for it.
       refute compare?(a < b == c < d == e < f != g < h, DateTime)
-      refute compare?(%{val: b}.val >= d, DateTime)
-      assert compare?(a > b or c < d, DateTime)
-      refute compare?(a > b and c < d, DateTime)
     end
   end
 
