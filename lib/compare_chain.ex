@@ -3,7 +3,7 @@ defmodule CompareChain do
   Convenience macros for doing comparisons
   """
 
-  alias CompareChain.DefaultCompare
+  alias CompareChain.Core
   alias CompareChain.ErrorMessage
 
   @doc """
@@ -57,7 +57,7 @@ defmodule CompareChain do
   """
   defmacro compare?(expr) do
     ast = quote(do: unquote(expr))
-    do_compare?(ast, DefaultCompare)
+    do_compare?(ast)
   end
 
   @doc """
@@ -132,16 +132,23 @@ defmodule CompareChain do
     do_compare?(ast, module)
   end
 
-  defguardp is_symmetric_op(op) when op == :== or op == :!=
+  defguardp is_symmetric_op(op) when op == :== or op == :!= or op == :=== or op == :!==
   defguardp is_asymmetric_op(op) when op == :<= or op == :>= or op == :< or op == :>
   defguardp is_comparison_op(op) when is_symmetric_op(op) or is_asymmetric_op(op)
   defguardp is_comparison(node) when is_tuple(node) and is_comparison_op(elem(node, 0))
+
+  defp do_compare?(ast) do
+    ast
+    |> preprocess()
+    |> chain_nested_comparisons()
+    |> default_comparisons()
+  end
 
   defp do_compare?(ast, module) do
     ast
     |> preprocess()
     |> chain_nested_comparisons()
-    |> convert_structural_to_semantic(module)
+    |> semantic_comparisons(module)
   end
 
   defp preprocess(ast) do
@@ -182,14 +189,6 @@ defmodule CompareChain do
     end)
   end
 
-  # Convert structural comparisons to semantic comparisons.
-  defp convert_structural_to_semantic(ast, module) do
-    Macro.prewalk(ast, fn
-      node when is_comparison(node) -> op_to_module_expr(node, module)
-      node -> node
-    end)
-  end
-
   # Converts an ast like `==(c, <=(a, b))` to an ast like `<=(==(c, a), b)`.
   # We do this to cover an edge case where symmetric comparison operators have
   # a higher precedence than the asymmetric operators. They therefore appear
@@ -209,9 +208,31 @@ defmodule CompareChain do
     {:and, meta, [left, right]}
   end
 
+  defp default_comparisons(ast) do
+    Macro.prewalk(ast, fn
+      node when is_comparison(node) -> default_comparison(node)
+      node -> node
+    end)
+  end
+
+  defp default_comparison({op, meta, [left, right]}) do
+    # We use `Core.compare/3` here so we can warn at runtime when structs are
+    # provided as arguments. We can't detect structs easily at compile time.
+    compare_fun = {:., meta, [Core, :compare]}
+    {compare_fun, meta, [op, left, right]}
+  end
+
+  # Convert structural comparisons to semantic comparisons.
+  defp semantic_comparisons(ast, module) do
+    Macro.prewalk(ast, fn
+      node when is_comparison(node) -> semantic_comparison(node, module)
+      node -> node
+    end)
+  end
+
   # Converts an ast for `left < right` to an ast for
   # `module.compare(left, right) == :lt`.
-  defp op_to_module_expr({op, meta, [left, right]}, module) do
+  defp semantic_comparison({op, meta, [left, right]}, module) do
     {kernel_fun, evals_to} =
       case op do
         :< -> {:==, :lt}
@@ -220,10 +241,14 @@ defmodule CompareChain do
         :>= -> {:!=, :lt}
         :== -> {:==, :eq}
         :!= -> {:!=, :eq}
+        :=== -> {:==, :eq}
+        :!== -> {:!=, :eq}
       end
 
-    module_fun = {:., meta, [module, :compare]}
-    comparison = {module_fun, meta, [left, right]}
+    # We're using `Core.compare/4` instead of the module directly so we can
+    # warn at runtime about the use of strict operators.
+    compare_fun = {:., meta, [Core, :compare]}
+    comparison = {compare_fun, meta, [module, op, left, right]}
     {kernel_fun, meta, [comparison, evals_to]}
   end
 end

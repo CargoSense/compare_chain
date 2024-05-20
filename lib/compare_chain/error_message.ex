@@ -15,19 +15,26 @@ defmodule CompareChain.ErrorMessage do
     "Cannot use `compare?` within a call to `compare?`."
   end
 
+  def strict_operator_warning do
+    """
+    Performing semantic comparison using either: `===` or `!===`.
+    This is reinterpreted as `==` or `!=`, respectively.
+    """
+  end
+
   @doc false
-  def struct_warning(%match{} = left, %match{} = right) do
+  def struct_warning(operator, %match{} = left, %match{} = right) do
     """
     Performing structural comparison on matching structs.
 
     Did you mean to use `compare?/2`?
 
-      compare?(#{inspect(left)} ??? #{inspect(right)}, #{struct_string(left)})
+      compare?(#{inspect(left)} #{operator} #{inspect(right)}, #{struct_string(left)})
     """
   end
 
   @doc false
-  def struct_warning(left, right) do
+  def struct_warning(_operator, left, right) do
     """
     Performing structural comparison on one or more mismatched structs.
 
