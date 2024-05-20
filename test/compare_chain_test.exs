@@ -14,6 +14,12 @@ defmodule CompareChainTest do
       refute compare?(1 === 1.0)
       assert compare?(1 !== 1.0)
     end
+
+    # The AST is out of order when these operators are mixed.
+    test "mixed symmetric and asymmetric operators" do
+      assert compare?(1 < 2 != 3 < 4)
+      refute compare?(1 < 2 != 3 > 4)
+    end
   end
 
   describe "`compare?/2`" do
@@ -37,8 +43,7 @@ defmodule CompareChainTest do
       refute compare?(a > b and c < d, DateTime)
     end
 
-    # The AST is surprisingly out of order when this happens, so we had to
-    # account for it.
+    # The AST is out of order when these operators are mixed.
     test "mixed symmetric and asymmetric operators" do
       a = ~U[2020-01-01 00:00:00Z]
       b = ~U[2021-01-01 00:00:00Z]
