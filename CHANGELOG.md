@@ -1,9 +1,12 @@
 # CHANGELOG
 
-## v1.0.0 (2024-05-18)
+## v0.5.0 (2024-05-20)
 
-  * Be slightly less restrictive about which expressions are valid
+  * Be less restrictive about which expressions are valid
   * Improve documentation
+  * Allow `===` and `!===`
+  * Fix bug with certain operation chains
+  * Disallow nested calls like `compare?(compare?())`
 
 ## v0.4.0 (2023-09-10)
 
