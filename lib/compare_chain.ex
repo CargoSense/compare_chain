@@ -44,7 +44,7 @@ defmodule CompareChain do
   >
   > Did you mean to use `compare?/2`?
   >
-  >   compare?(~D[2017-03-31] ??? ~D[2017-04-01], Date)
+  >   compare?(~D[2017-03-31] < ~D[2017-04-01], Date)
   > ```
   >
   > You probably want to use `compare?/2`, which does semantic comparison,
