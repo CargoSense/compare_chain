@@ -5,7 +5,7 @@
 Provides convenience macros for comparisons which do:
 
   * chained comparisons like `a < b < c`
-  * semantic comparisons using the structural operators `<`, `>`, `<=`, `>=`, `==`, and `!=`
+  * semantic comparisons using the structural operators: `<`, `>`, `<=`, `>=`, `==`, `!=`, `===`, and `!==`
   * combinations using `and`, `or`, and `not`
 
 ### Examples
@@ -104,7 +104,7 @@ So why can't we write this in Elixir?
 Two reasons:
 
   * Structural comparison operators
-  * Chained (nested) comparisons
+  * Chained vs. nested comparisons
 
 ### Structural comparison operators
 
@@ -134,13 +134,13 @@ From the [`Kernel` docs](https://hexdocs.pm/elixir/Kernel.html#module-structural
 In other words, although `~D[2017-03-31] > ~D[2017-04-01]` is perfectly valid code, it does _not_ tell you if `~D[2017-03-31]` is a later date than `~D[2017-04-01]` like you might expect.
 Instead, you need to use `Date.compare/2`.
 
-### Chained comparisons
+### Chained vs. nested comparisons
 
 Additionally, even if `~D[2017-03-31] > ~D[2017-04-01]` did do semantic comparison, you still couldn't write the interval check like you do in Python.
-This is because in Python, an expression like `1 < 2 < 3` is evaluated as `(1 < 2) and (2 < 3)`.
+This is because in Python, an expression like `1 < 2 < 3` is syntactic sugar for `(1 < 2) and (2 < 3)`, aka a series of "chained" expressions.
 
 Elixir does not provide an equivalent syntactic sugar.
-Instead, `1 < 2 < 3` is evaluated as `(1 < 2) < 3`.
+Instead, `1 < 2 < 3` is evaluated as `(1 < 2) < 3`, aka a series of "nested" expressions.
 Since `(1 < 2) < 3` simplifies to `true < 3`, that's probably not what you want!
 
 Elixir will even warn you when you attempt an expression like that:
@@ -199,7 +199,7 @@ As a happy accident, `CompareChain.compare?/2` always uses fewer characters than
 ```elixir
 compare?(a <= b, Date)
 # vs.
-Date.compare(a, b) != :lt
+Date.compare(a, b) != :gt
 ```
 
 (Assuming you've already included `import CompareChain`, of course!)
