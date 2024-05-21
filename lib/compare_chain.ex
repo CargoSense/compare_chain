@@ -57,7 +57,7 @@ defmodule CompareChain do
   """
   defmacro compare?(expr) do
     ast = quote(do: unquote(expr))
-    do_compare?(ast)
+    do_compare?(ast, Kernel)
   end
 
   @doc """
@@ -137,18 +137,11 @@ defmodule CompareChain do
   defguardp is_comparison_op(op) when is_symmetric_op(op) or is_asymmetric_op(op)
   defguardp is_comparison(node) when is_tuple(node) and is_comparison_op(elem(node, 0))
 
-  defp do_compare?(ast) do
-    ast
-    |> preprocess()
-    |> chain_nested_comparisons()
-    |> default_comparisons()
-  end
-
   defp do_compare?(ast, module) do
     ast
     |> preprocess()
     |> chain_nested_comparisons()
-    |> semantic_comparisons(module)
+    |> convert_comparisons(module)
   end
 
   defp preprocess(ast) do
@@ -208,47 +201,17 @@ defmodule CompareChain do
     {:and, meta, [left, right]}
   end
 
-  defp default_comparisons(ast) do
+  defp convert_comparisons(ast, module) do
     Macro.prewalk(ast, fn
-      node when is_comparison(node) -> default_comparison(node)
+      node when is_comparison(node) -> convert_comparison(node, module)
       node -> node
     end)
   end
 
-  defp default_comparison({op, meta, [left, right]}) do
-    # We use `Core.compare/3` here so we can warn at runtime when structs are
-    # provided as arguments. We can't detect structs easily at compile time.
-    compare_fun = {:., meta, [Core, :compare]}
-    {compare_fun, meta, [op, left, right]}
-  end
-
-  # Convert structural comparisons to semantic comparisons.
-  defp semantic_comparisons(ast, module) do
-    Macro.prewalk(ast, fn
-      node when is_comparison(node) -> semantic_comparison(node, module)
-      node -> node
-    end)
-  end
-
-  # Converts an ast for `left < right` to an ast for
-  # `module.compare(left, right) == :lt`.
-  defp semantic_comparison({op, meta, [left, right]}, module) do
-    {kernel_fun, evals_to} =
-      case op do
-        :< -> {:==, :lt}
-        :> -> {:==, :gt}
-        :<= -> {:!=, :gt}
-        :>= -> {:!=, :lt}
-        :== -> {:==, :eq}
-        :!= -> {:!=, :eq}
-        :=== -> {:==, :eq}
-        :!== -> {:!=, :eq}
-      end
-
-    # We're using `Core.compare/4` instead of the module directly so we can
-    # warn at runtime about the use of strict operators.
-    compare_fun = {:., meta, [Core, :compare]}
-    comparison = {compare_fun, meta, [module, op, left, right]}
-    {kernel_fun, meta, [comparison, evals_to]}
+  defp convert_comparison({op, meta, [left, right]}, module) do
+    # We use `Core.compare?/4` instead of direct AST manipulation so we can
+    # warn at runtime.
+    compare_fun = {:., meta, [Core, :compare?]}
+    {compare_fun, meta, [module, op, left, right]}
   end
 end
