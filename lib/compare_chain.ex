@@ -134,8 +134,10 @@ defmodule CompareChain do
 
   defguardp is_symmetric_op(op) when op == :== or op == :!= or op == :=== or op == :!==
   defguardp is_asymmetric_op(op) when op == :<= or op == :>= or op == :< or op == :>
+  defguardp is_combination_op(op) when op == :and or op == :or or op == :not
   defguardp is_comparison_op(op) when is_symmetric_op(op) or is_asymmetric_op(op)
   defguardp is_comparison(node) when is_tuple(node) and is_comparison_op(elem(node, 0))
+  defguardp is_combination(node) when is_tuple(node) and is_combination_op(elem(node, 0))
 
   defp do_compare?(ast, module) do
     ast
@@ -145,31 +147,24 @@ defmodule CompareChain do
   end
 
   defp preprocess(ast) do
-    {preprocessed_ast, comparison_found?} =
-      ast
-      # Nested `compare?`s like `compare?(compare?(a < b, Date) == true)`
-      # aren't supported.
-      |> Macro.prewalk(fn
-        {:compare?, _, _} -> raise ArgumentError, ErrorMessage.nested_not_allowed()
-        node -> node
-      end)
-      # Unwrap blocks so they don't mess with how we detect nested comparisons.
-      |> Macro.prewalk(fn
+    # Unwrap blocks so they don't mess with how we detect nested comparisons.
+    ast_without_blocks =
+      Macro.prewalk(ast, fn
         {:__block__, _, [node]} -> node
         node -> node
       end)
-      # Check if we have any comparison operators.
-      |> Macro.prewalk(false, fn
-        node, _ when is_comparison(node) -> {node, true}
-        node, comparison_found? -> {node, comparison_found?}
-      end)
 
-    if not comparison_found? do
-      raise ArgumentError, ErrorMessage.comparison_required()
+    if not valid?(ast_without_blocks) do
+      raise ArgumentError, ErrorMessage.invalid_expression(ast)
     end
 
-    preprocessed_ast
+    ast_without_blocks
   end
+
+  defp valid?(ast), do: valid?(ast, false)
+  defp valid?(node, false) when is_combination(node), do: Enum.all?(elem(node, 2), &valid?(&1))
+  defp valid?(node, false) when is_comparison(node), do: true
+  defp valid?(_, _), do: false
 
   defp chain_nested_comparisons(ast) do
     ast

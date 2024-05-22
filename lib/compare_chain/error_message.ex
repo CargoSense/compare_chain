@@ -3,16 +3,43 @@ defmodule CompareChain.ErrorMessage do
   @moduledoc false
 
   @doc false
-  def comparison_required do
+  def invalid_expression(ast) do
     """
-    No comparison operators found.
-    Expression must include at least one of `<`, `>`, `<=`, `>=`, `==`, `!=`, `===`, or `!===`.
-    """
-  end
+    The following expression is an invalid argument to `compare?/{1,2}`:
 
-  @doc false
-  def nested_not_allowed do
-    "Cannot use `compare?` within a call to `compare?`."
+        #{Macro.to_string(ast)}
+
+    There are three ways this might happen:
+
+      * No comparison operators found - at least one of these must be included:
+
+          `<`, `>`, `<=`, `>=`, `==`, `!=`, `===`, or `!===`
+
+      * An operator that isn't a comparison or a combination was found at the
+        root of the expression. For example:
+
+          compare?(my_function(a < b), Date)
+
+        This expression is invalid because `compare?/2` cannot guarantee the
+        return of `my_function` will be a boolean. This expression can be
+        refactored to be valid like so:
+
+          my_function(compare?(a < b, Date))
+
+      * One branch of a combination failed to contain a comparison. For example,
+        this is valid:
+
+          compare(1 < 2 < 3 and 4 < 5)
+
+        but this is not:
+
+          compare?(1 < 2 < 3 and true)
+
+        because the right side of `and` fails to contain a comparison. This
+        expression can be refactored to be valid like so:
+
+          compare?(1 < 2 < 3) and true
+    """
   end
 
   def strict_operator_warning do

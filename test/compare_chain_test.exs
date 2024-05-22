@@ -6,10 +6,6 @@ defmodule CompareChainTest do
   import CompareChain
 
   describe "`compare?/1`" do
-    test "works with boolean literals" do
-      assert compare?((true and 1 < 2) or false)
-    end
-
     test "works with `===` and `!==`" do
       refute compare?(1 === 1.0)
       assert compare?(1 !== 1.0)
@@ -67,24 +63,6 @@ defmodule CompareChainTest do
                  not (~D[2020-01-01] < ~D[2020-01-02]),
                Date
              )
-    end
-
-    test "non-boolean return" do
-      # `~D[2020-02-01] < ~D[2020-01-02]` is `true` via structural comparison.
-      # Only if we do proper, semantic comparison do we get the right answer.
-      result =
-        compare?(
-          if ~D[2020-02-01] < ~D[2020-01-02] do
-            :structural
-          else
-            :semantic
-          end,
-          Date
-        )
-
-      # This whole thing odd since makes `compare?/2` not evaluate to a boolean.
-      # Preventing it enters the halting problem territory, though.
-      assert result == :semantic
     end
   end
 
