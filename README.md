@@ -5,7 +5,7 @@
 Provides convenience macros for comparisons which do:
 
   * chained comparisons like `a < b < c`
-  * semantic comparisons using the structural operators `<`, `>`, `<=`, `>=`, `==`, and `!=`
+  * semantic comparisons using the structural operators: `<`, `>`, `<=`, `>=`, `==`, `!=`, `===`, and `!==`
   * combinations using `and`, `or`, and `not`
 
 ### Examples
@@ -19,6 +19,10 @@ true
 
 # Semantic comparisons
 iex> compare?(~D[2017-03-31] < ~D[2017-04-01], Date)
+true
+
+# Chained, semantic comparisons
+iex> compare?(~D[2017-03-31] < ~D[2017-04-01] < ~D[2017-04-02], Date)
 true
 
 # Semantic comparisons with logical operators
@@ -37,7 +41,7 @@ Add `compare_chain` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:compare_chain, "~> 0.3"}
+    {:compare_chain, "~> 0.5"}
   ]
 end
 ```
@@ -46,68 +50,158 @@ Documentation can be found at <https://hexdocs.pm/compare_chain>.
 
 ## Usage
 
-Once installed, you can add
+Once installed, you can add:
 
 ```elixir
 import CompareChain
 ```
 
-to your `defmodule` and you will have access to `compare?/1` and `compare?/2`.
+to your `defmodule` and you will have access to `CompareChain.compare?/1` and `CompareChain.compare?/2`.
 
 ## Background and motivation
 
-Many languages provide syntactic sugar for chained comparisons.
-For example in Python, `a < b < c` would be evaluated as `(a < b) and (b < c)`.
+`CompareChain` was originally motivated by the following situation:
 
-Elixir does not provide this.
-Instead, `a < b < c` is evaluated as `(a < b) < c`.
-Since `a < b` is a boolean, that's probably not what you want.
+> You have an interval of time bounded by a two `%Date{}` structs: `start_date` and `end_date`.
+> You want to know if some third `date` falls in that interval.
+> How do you write this?
 
-Further, operators like `<` do _structural_ comparison instead of _semantic_ comparison.
-For most situations, you probably want to use `compare/2`.
+In Elixir, we'd write this as follows:
+
+```elixir
+Date.compare(start_date, date) == :lt and
+  Date.compare(date, end_date) == :lt
+```
+
+This is verbose and therefore a little hard to read.
+It's also potentially incorrect.
+What if `date` is considered "within" the interval even if it equals `start_date` or `end_date`?
+To include the bounds in our comparison, we'd instead write the expression like this:
+
+```elixir
+Date.compare(start_date, date) != :gt and
+  Date.compare(date, end_date) != :gt
+```
+
+(We could have written `Date.compare(start_date, date) in [:lt, :eq]`, but `!= :gt` is faster.)
+
+In order to spot the difference between these two cases, you have to keep several things in mind:
+
+  * The order of the arguments passed to `Date.compare/2`
+  * The specific comparison operators for each clause: `==` vs. `!=`
+  * The specific comparison atoms for each clause: `:lt` vs. `:gt`
+
+Since this is hard to read, it's easy to introduce bugs.
+Contrast this with how you'd write the equivalent code in Python:
+
+```
+start_date <  date <  end_date # excluding bounds
+start_date <= date <= end_date # including bounds
+```
+
+This is much easier to read.
+So why can't we write this in Elixir?
+Two reasons:
+
+  * Structural comparison operators
+  * Chained vs. nested comparisons
+
+### Structural comparison operators
+
+Operators like `<` do _structural_ comparison instead of _semantic_ comparison.
 From the [`Kernel` docs](https://hexdocs.pm/elixir/Kernel.html#module-structural-comparison):
 
-<blockquote>
-<details>
+> ... **comparisons in Elixir are structural**, as it has the goal
+  of comparing data types as efficiently as possible to create flexible
+  and performant data structures. This distinction is specially important
+  for functions that provide ordering, such as `>/2`, `</2`, `>=/2`,
+  `<=/2`, `min/2`, and `max/2`. For example:
+>
+> ```elixir
+> ~D[2017-03-31] > ~D[2017-04-01]
+> ```
+>
+> will return `true` because structural comparison compares the `:day`
+  field before `:month` or `:year`. In order to perform semantic comparisons,
+  the relevant data-types provide a `compare/2` function, such as
+  `Date.compare/2`:
+>
+> ```elixir
+> iex> Date.compare(~D[2017-03-31], ~D[2017-04-01])
+> :lt
+> ```
 
-<summary>Show/Hide</summary>
+In other words, although `~D[2017-03-31] > ~D[2017-04-01]` is perfectly valid code, it does _not_ tell you if `~D[2017-03-31]` is a later date than `~D[2017-04-01]` like you might expect.
+Instead, you need to use `Date.compare/2`.
 
-The comparison functions in this module perform structural comparison.
-This means structures are compared based on their representation and not on their semantic value.
-This is specially important for functions that are meant to provide ordering, such as <code>&gt;/2</code>, <code>&lt;/2</code>, <code>&gt;=/2</code>, <code>&lt;=/2</code>, <code>min/2</code>, and <code>max/2</code>.
-For example:
+### Chained vs. nested comparisons
 
-<pre>
-<code>
-~D[2017-03-31] > ~D[2017-04-01]
-</code>
-</pre>
+Additionally, even if `~D[2017-03-31] > ~D[2017-04-01]` did do semantic comparison, you still couldn't write the interval check like you do in Python.
+This is because in Python, an expression like `1 < 2 < 3` is syntactic sugar for `(1 < 2) and (2 < 3)`, aka a series of "chained" expressions.
 
-returns <code>true</code> because structural comparison compares the <code>:day</code> field before <code>:month</code> or <code>:year</code>.
-Therefore, when comparing structs, you often use the <code>compare/2</code> function made available by the structs modules themselves:
+Elixir does not provide an equivalent syntactic sugar.
+Instead, `1 < 2 < 3` is evaluated as `(1 < 2) < 3`, aka a series of "nested" expressions.
+Since `(1 < 2) < 3` simplifies to `true < 3`, that's probably not what you want!
 
-<pre>
-<code>
-iex> Date.compare(~D[2017-03-31], ~D[2017-04-01])
-:lt
-</code>
-</pre>
+Elixir will even warn you when you attempt an expression like that:
 
-</details>
-</blockquote>
+> warning: Elixir does not support nested comparisons. Something like
+>
+>      x < y < z
+>
+> is equivalent to
+>
+>      (x < y) < z
+>
+> which ultimately compares z with the boolean result of (x < y). Instead, consider joining together each comparison segment with an "and", for example,
+>
+>      x < y and y < z
 
-The `compare/2` approach works well in many situations, but even moderately complicated logic can be cumbersome.
-If we wanted the native equivalent of:
+### CompareChain
+
+`CompareChain` attempts to address both of these issues with the macro `CompareChain.compare?/2`.
+Its job is to take code similar to how you'd like to write it and rewriting it to be semantically correct.
+
+For our motivating example, we'd write this:
 
 ```elixir
-iex> compare?(~D[2017-03-31] <= ~D[2017-04-01] < ~D[2017-04-02], Date)
+import CompareChain
+compare?(start_date <  date <  end_date, Date) # excluding bounds
+compare?(start_date <= date <= end_date, Date) # including bounds
 ```
 
-we'd have to write:
+And at compile time, `CompareChain.compare?/2` rewrites those to be:
 
 ```elixir
-iex> Date.compare(~D[2017-03-31], ~D[2017-04-01]) != :gt and Date.compare(~D[2017-04-01]), ~D[2017-04-02]) == :lt
+# excluding bounds
+Date.compare(start_date, date) == :lt and
+  Date.compare(date, end_date) == :lt
+
+# including bounds
+Date.compare(start_date, date) != :gt and
+  Date.compare(date, end_date) != :gt
 ```
 
-The goal of both `compare?/1` and `compare?/2` is to provide the syntactic sugar for chained comparisons.
-With `compare?/2`, there is the added benefit of being able to use the structural comparison operators for semantic comparison.
+This way your code is more readable while still remaining correct.
+
+`CompareChain.compare?/1` is also available in case you only need chained comparison using the structural operators:
+
+```elixir
+compare?(1 < 2 < 3)
+```
+
+Though I find this case comes up less often.
+
+### One last selling point
+
+As a happy accident, `CompareChain.compare?/2` always uses fewer characters than its `compare/2` counterpart:
+
+```elixir
+compare?(a <= b, Date)
+# vs.
+Date.compare(a, b) != :gt
+```
+
+(Assuming you've already included `import CompareChain`, of course!)
+
+Because it's shorter _and_ more readable, these days I always use `CompareChain` for any semantic comparison, chained or not.
