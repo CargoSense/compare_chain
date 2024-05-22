@@ -2,11 +2,17 @@
 
 ## v0.5.0 (2024-05-20)
 
-  * Be less restrictive about which expressions are valid
+  * Allow `===` and `!===` in expressions
   * Improve documentation
-  * Allow `===` and `!===`
-  * Fix bug with certain operation chains
-  * Disallow nested calls like `compare?(compare?())`
+  * Fix bug with certain operation chains:
+    ```
+    compare?(1 < 2 != 3 < 4) #=> true
+    compare?(1 < 2 != 3 > 4) #=> true (wrong!)
+    ```
+  * Improve error message and documentation for invalid expressions
+  * [BREAKING] all branches of `and`, `or` and `not` must now contain comparisons
+    * Example: `compare?(1 < 2 and true)` used to be ok but is no longer
+      allowed because the right argument to `and` doesn't contain a comparison.
 
 ## v0.4.0 (2023-09-10)
 

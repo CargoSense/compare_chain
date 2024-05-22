@@ -9,36 +9,14 @@ defmodule CompareChain.ErrorMessage do
 
         #{Macro.to_string(ast)}
 
-    There are three ways this might happen:
+    Valid expressions follow these three rules:
 
-      * No comparison operators found - at least one of these must be included:
+      1. A comparison operator like `<` must be present.
+      2. All arguments to boolean operators must also be valid expressions.
+      3. The root operator of an expression must be a comparison or a boolean.
 
-          `<`, `>`, `<=`, `>=`, `==`, `!=`, `===`, or `!===`
-
-      * An operator that isn't a comparison or a combination was found at the
-        root of the expression. For example:
-
-          compare?(my_function(a < b), Date)
-
-        This expression is invalid because `compare?/2` cannot guarantee the
-        return of `my_function` will be a boolean. This expression can be
-        refactored to be valid like so:
-
-          my_function(compare?(a < b, Date))
-
-      * One branch of a combination failed to contain a comparison. For example,
-        this is valid:
-
-          compare(1 < 2 < 3 and 4 < 5)
-
-        but this is not:
-
-          compare?(1 < 2 < 3 and true)
-
-        because the right side of `and` fails to contain a comparison. This
-        expression can be refactored to be valid like so:
-
-          compare?(1 < 2 < 3) and true
+    So at least one of these rules is not satisfied by the expression. See the
+    moduledoc for `CompareChain` for more details including refactoring hints.
     """
   end
 

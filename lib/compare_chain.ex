@@ -1,6 +1,63 @@
 defmodule CompareChain do
   @moduledoc """
   Convenience macros for doing comparisons
+
+  ## Valid expressions
+
+  Valid expressions for `compare?/1` and `compare?/2` follow these three rules:
+
+  ### 1. A comparison operator like `<` must be present.
+
+  At least one of these must be included: `<`, `>`, `<=`, `>=`, `==`, `!=`,
+  `===`, or `!===`. So this is valid:
+
+      compare?(1 < 2 < 3)
+
+  but this is not:
+
+      compare?(true)
+
+  because it does not contain any comparisons.
+
+  ### 2. All arguments to boolean operators must also be valid expressions.
+
+  The boolean operators `and`, `or`, and `not` are allowed in expressions so
+  long as all of their arguments (eventually) contain a comparison. So this is
+  valid:
+
+      compare?(1 < 2 < 3 and 4 < 5)
+
+  as is this:
+
+      compare?(not (not 1 < 2 < 3))
+
+  but this is not:
+
+      compare?(1 < 2 < 3 and true)
+
+  because the right side of `and` fails to contain a comparison. This
+  expression can be refactored to be valid by moving the non-comparison branch
+  outside `compare?/1` like so:
+
+      compare?(1 < 2 < 3) and true
+
+  ### 3. The root operator of an expression must be a comparison or a boolean.
+
+  So this is not valid:
+
+      compare?(my_function(a < b), Date)
+
+  because its root operator is `my_function/1`. This expression can be
+  refactored to be valid by moving `compare?/2` inside `my_function/1` like so:
+
+      my_function(compare?(a < b, Date))
+
+  We restrict expressions in this fashion so we can guarantee that `compare?/1`
+  and `compare?/2` will always return a boolean.
+
+  Also note that arguments to _comparisons_ may be arbitrarily complicated:
+
+      compare?(a < Date.utc_today(), Date)
   """
 
   alias CompareChain.Core
@@ -9,8 +66,9 @@ defmodule CompareChain do
   @doc """
   Macro that performs chained comparison with operators like `<`.
 
-  You man also include combinations using `and`, `or`, and `not` in the
-  expression.
+  You may also include the boolean operators `and`, `or`, and `not` in the
+  expression so long as all their arguments all (eventually) contain
+  comparisons. See the moduledoc for more details.
 
   For a version that also does semantic comparison, see: `compare?/2`.
 
@@ -30,7 +88,7 @@ defmodule CompareChain do
 
   ## Warnings and errors
 
-  > ### Comparing structs {: .warning}
+  > ### Comparing structs will warn {: .warning}
   >
   > Expressions which compare matching structs like:
   >
@@ -50,10 +108,9 @@ defmodule CompareChain do
   > You probably want to use `compare?/2`, which does semantic comparison,
   > instead.
 
-  > ### Compilation requirement {: .error}
+  > ### Invalid expressions will raise {: .error}
   >
-  > You must include at least one comparison like `<` in your expression.
-  > Failing to do so will result in a compile time error.
+  > See the section on valid expressions in the moduledoc for details.
   """
   defmacro compare?(expr) do
     ast = quote(do: unquote(expr))
@@ -68,8 +125,9 @@ defmodule CompareChain do
   This is like how you can provide a module as the second argument to
   `Enum.sort/2` when you need to sort items semantically.
 
-  You man also include combinations using `and`, `or`, and `not` in the
-  expression.
+  You may also include the boolean operators `and`, `or`, and `not` in the
+  expression so long as all their arguments all (eventually) contain
+  comparisons. See the moduledoc for more details.
 
   For a version that does chained comparison using the normal `<` operators,
   see: `compare?/1`.
@@ -122,10 +180,26 @@ defmodule CompareChain do
 
   ## Warnings and errors
 
-  > ### Compilation requirement {: .error}
+  > ### Using the "strict" operators will warn {: .warning}
   >
-  > You must include at least one comparison like `<` in your expression.
-  > Failing to do so will result in a compile time error.
+  > Expressions which include either `===` or `!==` like:
+  >
+  >     iex> compare?(~D[2017-03-31] !== ~D[2017-04-01], Date)
+  >     true
+  >
+  > Will result in a warning:
+  >
+  > ```plain
+  > ... [warning] Performing semantic comparison using either: `===` or `!===`.
+  > This is reinterpreted as `==` or `!=`, respectively.
+  > ```
+  >
+  > These operators have no additional meaning over `==` and `!=` when doing
+  > semantic comparison.
+
+  > ### Invalid expressions will raise {: .error}
+  >
+  > See the section on valid expressions in the moduledoc for details.
   """
   defmacro compare?(expr, module) do
     ast = quote(do: unquote(expr))
