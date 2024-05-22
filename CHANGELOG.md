@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.5.0 (2024-05-20)
+## v0.5.0 (2024-05-22)
 
   * Allow `===` and `!===` in expressions
   * Improve documentation
