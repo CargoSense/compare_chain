@@ -10,14 +10,19 @@ on:
 jobs:
   test:
     name: OTP ${{ matrix.otp }} / Elixir ${{ matrix.elixir }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       MIX_ENV: test
     strategy:
       fail-fast: false
       matrix:
-        otp: ["25.0.4"]
-        elixir: ["1.14.1"]
+        elixir: ["1.16", "1.15", "1.14", "1.13"]
+        include:
+          - otp: [26, 25, 24]
+          - elixir: "1.14"
+            otp: [25, 24, 23]
+          - elixir: "1.13"
+            otp: [24, 23, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: CargoSense/setup-elixir-project@v1
