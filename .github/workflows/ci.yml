@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dipatch:
+
+jobs:
+  test:
+    name: OTP ${{ matrix.otp }} / Elixir ${{ matrix.elixir }}
+    runs-on: ubuntu-20.04
+    env:
+      MIX_ENV: test
+    strategy:
+      fail-fast: false
+      matrix:
+        elixir: ["1.16", "1.15", "1.14", "1.13"]
+        include:
+          - otp: [26, 25, 24]
+          - elixir: "1.14"
+            otp: [25, 24, 23]
+          - elixir: "1.13"
+            otp: [24, 23, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CargoSense/setup-elixir-project@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+          build-flags: "--warnings-as-errors"
+      - run: mix format --check-formatted
+      - run: mix test
