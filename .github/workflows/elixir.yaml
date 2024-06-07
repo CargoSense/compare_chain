@@ -13,9 +13,6 @@ on:
 env:
   MIX_ENV: test
 
-permissions:
-  contents: read
-
 jobs:
   test:
     runs-on: ubuntu-latest
