@@ -4,9 +4,9 @@
 
 Provides convenience macros for comparisons which do:
 
-  * chained comparisons like `a < b < c`
+  * chained comparisons like: `a < b < c`
   * semantic comparisons using the structural operators: `<`, `>`, `<=`, `>=`, `==`, `!=`, `===`, and `!==`
-  * combinations using `and`, `or`, and `not`
+  * combinations using: `and`, `or`, and `not`
 
 ### Examples
 
@@ -74,7 +74,7 @@ Date.compare(start_date, date) == :lt and
 ```
 
 This is verbose and therefore a little hard to read.
-It's also potentially incorrect.
+It's also potentially incorrect, though not obviously so.
 What if `date` is considered "within" the interval even if it equals `start_date` or `end_date`?
 To include the bounds in our comparison, we'd instead write the expression like this:
 
