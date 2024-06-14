@@ -29,8 +29,9 @@ The above code is verbose, somewhat hard to read, and potentially incorrect (tho
 Date.compare(start_date, date) != :gt and
   Date.compare(date, end_date) != :gt
 
-# …or, terser but less performant:
-Date.compare(start_date, date) in [:lt, :eq]
+# …or, even more verbosely:
+Date.compare(start_date, date) in [:lt, :eq] and
+  Date.compare(date, end_date) in [:lt, :eq]
 ```
 
 To spot the difference between these two cases, you must keep in mind:
