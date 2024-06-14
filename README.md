@@ -137,7 +137,7 @@ compare?(start_date < date < end_date, Date)
 compare?(start_date <= date <= end_date, Date)
 ```
 
-`CompareChain.compare?/2` compiles these expressions as:
+`CompareChain.compare?/2` rewrites these expressions as:
 
 ```elixir
 # excluding bounds
