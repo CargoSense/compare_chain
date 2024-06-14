@@ -8,7 +8,7 @@
 
 ## Key Features
 
-CompareChain provides convenience macros for comparisons like:
+CompareChain provides convenience macros for:
 
 - chained comparisons (`a < b < c`)
 - semantic comparisons using structural operators (`<`, `>`, `<=`, `>=`, `==`, `!=`, `===`, and `!==`)
