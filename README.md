@@ -82,7 +82,7 @@ To spot the difference between these two cases, you must keep in mind:
 - the specific comparison operators for each clause (`==` vs. `!=`), and
 - the specific comparison atoms for each clause (`:lt` vs. `:gt`).
 
-Contrast this example with how equivalent Python code:
+Contrast this example with equivalent Python code:
 
 ```python
 # excluding bounds
