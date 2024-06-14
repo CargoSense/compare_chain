@@ -72,7 +72,7 @@ Operators like `<` do _structural_ comparison (instead of _semantic_ comparison)
 > ```
 
 In other words, although `~D[2017-03-31] > ~D[2017-04-01]` is valid code, it does _not_ tell you if `~D[2017-03-31]` is a later date than `~D[2017-04-01]` as you might expect.
-Instead, you'd' use `Date.compare/2`.
+Instead, you'd use `Date.compare/2`.
 
 ### Chained vs. Nested Comparisons
 
