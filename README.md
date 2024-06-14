@@ -154,10 +154,7 @@ iex> compare?(%{a: ~T[16:00:00]}.a <= ~T[17:00:00], Time)
 true
 ```
 
-<!--  -->
-
-> ![TIP]
-> See [CompareChain on HexDocs](https://hexdocs.pm/compare_chain) for more.
+See [CompareChain on HexDocs](https://hexdocs.pm/compare_chain) for more.
 
 ## Acknowledgements
 
