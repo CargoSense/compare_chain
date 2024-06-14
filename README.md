@@ -14,6 +14,48 @@ CompareChain provides convenience macros for:
 - semantic comparisons using structural operators (`<`, `>`, `<=`, `>=`, `==`, `!=`, `===`, and `!==`)
 - combinations (`and`, `or`, and `not`)
 
+## Installation
+
+Add `compare_chain` to your project's dependencies in `mix.exs` and run `mix deps.get`:
+
+```elixir
+def deps do
+  [
+    {:compare_chain, "~> 0.5"}
+  ]
+end
+```
+
+## Usage
+
+Import CompareChain to enable access to `CompareChain.compare?/1` and `CompareChain.compare?/2`:
+
+```elixir
+iex> import CompareChain
+
+# Chained comparisons
+iex> compare?(1 < 2 < 3)
+true
+
+# Semantic comparisons
+iex> compare?(~D[2017-03-31] < ~D[2017-04-01], Date)
+true
+
+# Chained semantic comparisons
+iex> compare?(~D[2017-03-31] < ~D[2017-04-01] < ~D[2017-04-02], Date)
+true
+
+# Semantic comparisons with logical operators
+iex> compare?(~T[16:00:00] <= ~T[16:00:00] and not (~T[17:00:00] <= ~T[17:00:00]), Time)
+false
+
+# Complex expressions
+iex> compare?(%{a: ~T[16:00:00]}.a <= ~T[17:00:00], Time)
+true
+```
+
+See [CompareChain on HexDocs](https://hexdocs.pm/compare_chain) for more.
+
 ## Background
 
 Say you have an interval of time bounded by two `%Date{}` structs, `start_date` and `end_date`, and you want to know whether or not a third `date` falls within that interval. How would you write this in Elixir?
@@ -114,48 +156,6 @@ Your code is more readable while remaining correct!
 ```elixir
 compare?(1 < 2 < 3)
 ```
-
-## Installation
-
-Add `compare_chain` to your project's dependencies in `mix.exs` and run `mix deps.get`:
-
-```elixir
-def deps do
-  [
-    {:compare_chain, "~> 0.5"}
-  ]
-end
-```
-
-## Usage
-
-Import CompareChain to enable access to `CompareChain.compare?/1` and `CompareChain.compare?/2`:
-
-```elixir
-iex> import CompareChain
-
-# Chained comparisons
-iex> compare?(1 < 2 < 3)
-true
-
-# Semantic comparisons
-iex> compare?(~D[2017-03-31] < ~D[2017-04-01], Date)
-true
-
-# Chained semantic comparisons
-iex> compare?(~D[2017-03-31] < ~D[2017-04-01] < ~D[2017-04-02], Date)
-true
-
-# Semantic comparisons with logical operators
-iex> compare?(~T[16:00:00] <= ~T[16:00:00] and not (~T[17:00:00] <= ~T[17:00:00]), Time)
-false
-
-# Complex expressions
-iex> compare?(%{a: ~T[16:00:00]}.a <= ~T[17:00:00], Time)
-true
-```
-
-See [CompareChain on HexDocs](https://hexdocs.pm/compare_chain) for more.
 
 ## Acknowledgements
 
