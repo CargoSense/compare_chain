@@ -16,7 +16,7 @@ CompareChain provides convenience macros for comparisons like:
 
 ## Background
 
-Say you have an interval of time bounded by two `%Date{}` structs, `start_date` and `end_date`, and want to know whether or not a third `date` falls within that interval. How would you write this in Elixir?
+Say you have an interval of time bounded by two `%Date{}` structs, `start_date` and `end_date`, and you want to know whether or not a third `date` falls within that interval. How would you write this in Elixir?
 
 ```elixir
 Date.compare(start_date, date) == :lt and
