@@ -27,7 +27,8 @@
         "vscode": {
             "extensions": [
               "EditorConfig.EditorConfig",
-              "JakeBecker.elixir-ls"
+              "JakeBecker.elixir-ls",
+              "jasonnutter.vscode-codeowners"
             ]
         }
     }
