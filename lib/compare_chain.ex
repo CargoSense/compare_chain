@@ -245,7 +245,7 @@ defmodule CompareChain do
   end
 
   defp valid?(ast), do: valid?(ast, false)
-  defp valid?(node, false) when is_combination(node), do: Enum.all?(elem(node, 2), &valid?(&1))
+  defp valid?(node, false) when is_combination(node), do: Enum.all?(elem(node, 2), &valid?/1)
   defp valid?(node, false) when is_comparison(node), do: true
   defp valid?(_, _), do: false
 
