@@ -134,16 +134,25 @@ defmodule CompareChain do
 
   ## Examples
 
-  Semantic comparison (note how `a < b == false` because of native structural
-  comparison):
+  Semantic comparison:
 
       iex> import CompareChain
       iex> a = ~D[2017-03-31]
       iex> b = ~D[2017-04-01]
-      iex> a < b
-      false
       iex> compare?(a < b, Date)
       true
+
+  > #### Semantic vs. Structural Comparison Differences {: .info}
+  >
+  > In the above example, `compare?(a < b, Date)` evaluates to `true`. On its
+  > own, `a < b` evaluates to `false` (with a warning). **This is why it's so
+  > important to not use comparison operators on structs directly.** The answer
+  > is not what you would expect.
+  >
+  > _Trivia!_ If you're curious, `b` comes before `a` because in term ordering,
+  > maps of equal size are compared key by key in ascending order. In this case,
+  > `:day` is the first key (due to ASCII byte ordering) where `a` and `b`
+  > differ. Since `a.day == 31` and `b.day == 1`, we have `b < a`.
 
   Chained, semantic comparison:
 
@@ -236,7 +245,7 @@ defmodule CompareChain do
   end
 
   defp valid?(ast), do: valid?(ast, false)
-  defp valid?(node, false) when is_combination(node), do: Enum.all?(elem(node, 2), &valid?(&1))
+  defp valid?(node, false) when is_combination(node), do: Enum.all?(elem(node, 2), &valid?/1)
   defp valid?(node, false) when is_comparison(node), do: true
   defp valid?(_, _), do: false
 
