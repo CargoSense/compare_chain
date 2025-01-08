@@ -16,22 +16,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        otp: [26, 25, 24]
-        elixir: ["1.16", "1.15", "1.14", "1.13"]
+        otp: [27, 26, 25, 24]
+        elixir: ["1.18", "1.17", "1.16", "1.15"]
         exclude:
-          - otp: 26
-            elixir: "1.14"
-          - otp: 26
-            elixir: "1.13"
-          - otp: 25
-            elixir: "1.13"
-        include:
-          - otp: 23
-            elixir: "1.14"
-          - otp: 23
-            elixir: "1.13"
-          - otp: 22
-            elixir: "1.13"
+          - otp: 24
+            elixir: "1.18"
+          - otp: 24
+            elixir: "1.17"
+          - otp: 27
+            elixir: "1.16"
+          - otp: 27
+            elixir: "1.15"
+        # (Keeping this around as a reminder that you can do it if needed.)
+        # include:
+        #   - otp: 23
+        #     elixir: "1.14"
     steps:
       - uses: actions/checkout@v4
       - uses: CargoSense/setup-elixir-project@v1
