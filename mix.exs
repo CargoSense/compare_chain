@@ -2,14 +2,14 @@ defmodule CompareChain.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/CargoSense/compare_chain"
-  @version "0.5.0"
+  @version "0.6.0"
 
   def project do
     [
       app: :compare_chain,
       deps: deps(),
       docs: docs(),
-      elixir: ">= 1.13.0",
+      elixir: ">= 1.15.0",
       package: package(),
       start_permanent: Mix.env() == :prod,
       version: @version
