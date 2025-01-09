@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.6.0 (2025-01-09)
+
+  * Drop official support for Elixir 1.13 and 1.14 (though they should still work)
+  * Currently support Elixir 1.15 to 1.18
+
 ## v0.5.0 (2024-05-22)
 
   * Allow `===` and `!===` in expressions
