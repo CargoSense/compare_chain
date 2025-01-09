@@ -4,7 +4,8 @@
 
   * Drop official support for Elixir 1.13 and 1.14 (though they should still work)
   * Currently support Elixir 1.15 to 1.18
-  * Miscellanea: doc tweaks, renamed LISENCE file, added CODEOWNERS file, etc.
+  * Change docs so they no longer warn about a doctest
+  * Miscellanea: renamed LISENCE file, added CODEOWNERS file, etc.
 
 ## v0.5.0 (2024-05-22)
 
