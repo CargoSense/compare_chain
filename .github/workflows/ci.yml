@@ -32,7 +32,7 @@ jobs:
         #   - otp: 23
         #     elixir: "1.14"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: CargoSense/setup-elixir-project@v1
         with:
           otp-version: ${{ matrix.otp }}
